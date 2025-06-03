@@ -56,13 +56,14 @@
         .checkbox-item input[type="checkbox"] { margin-right: 12px; width: 18px; height: 18px; accent-color: var(--primary-color); }
         .search-filters { display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; padding: 20px; background-color: var(--light-purple-bg); border-radius: 8px; margin-bottom: 20px;}
         .search-filters .form-group { margin-bottom: 0;}
-        .swal2-html-container { text-align: left !important; font-size: 1em !important; max-height: 70vh; overflow-y: auto;} /* Adjusted max-height for swal */
+        .swal2-html-container { text-align: left !important; font-size: 1em !important; max-height: 70vh; overflow-y: auto;}
         .swal2-input, .swal2-select, .swal2-textarea { font-size: 1em !important; border-radius: 6px !important; }
         .swal2-actions button { font-size: 1em !important; padding: 10px 20px !important; margin: 5px !important; }
         .chart-grid { display: grid; grid-template-columns: 1fr; gap: 30px; margin-top: 20px;} 
-        #individual-student-info-display img { max-width: 100px; max-height: 100px; border-radius: 50%; float: left; margin-right: 15px; border: 2px solid var(--secondary-color); }
+        #individual-student-info-display img { max-width: 100px; max-height: 100px; border-radius: 50%; float: left; margin-right: 15px; border: 2px solid var(--secondary-color); object-fit: cover;}
         #individual-student-info-display p { margin-bottom: 5px; line-height: 1.5; }
-        #individual-student-info-display div { overflow: hidden; } /* To contain floated image */
+        #individual-student-info-display div:not(:has(img)) { overflow: hidden; } 
+        .clear-float { clear:both; }
         @media (min-width: 992px) { 
             .chart-grid { grid-template-columns: 1fr 1fr; }
         }
@@ -320,7 +321,7 @@
         }
 
         function showPage(pageId) {
-            console.log("Showing page:", pageId);
+            // console.log("Showing page:", pageId);
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             const newPage = document.getElementById(pageId);
             if (newPage) newPage.classList.add('active'); else console.error("Page not found:", pageId);
@@ -336,34 +337,28 @@
                     throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
                 }
                 const jsonData = await response.json();
-                console.log("Raw data from GAS:", jsonData);
+                
                 if (!Array.isArray(jsonData)) {
                     console.error("Fetched data is not an array:", jsonData);
                     allData = []; 
                     throw new Error("รูปแบบข้อมูลที่ได้รับไม่ถูกต้องจากเซิร์ฟเวอร์");
                 }
-                // Ensure nested JSON strings are parsed
                 allData = jsonData.map(row => {
-                    if (row.FollowUpActions && typeof row.FollowUpActions === 'string') {
-                        try { row.FollowUpActions = JSON.parse(row.FollowUpActions); } 
-                        catch (e) { console.warn("Could not parse FollowUpActions for row:", row.RowID, row.FollowUpActions); row.FollowUpActions = []; }
-                    }
-                    if (row.DocumentJSON && typeof row.DocumentJSON === 'string') {
-                        try { row.DocumentJSON = JSON.parse(row.DocumentJSON); } 
-                        catch (e) { console.warn("Could not parse DocumentJSON for row:", row.RowID, row.DocumentJSON); row.DocumentJSON = null; }
-                    }
-                    if (row.ImageJSON && typeof row.ImageJSON === 'string') {
-                        try { row.ImageJSON = JSON.parse(row.ImageJSON); } 
-                        catch (e) { console.warn("Could not parse ImageJSON for row:", row.RowID, row.ImageJSON); row.ImageJSON = null; }
-                    }
-                     if (row.ProfilePicURL && typeof row.ProfilePicURL === 'string') {
-                        try { row.ProfilePicURL = JSON.parse(row.ProfilePicURL); } 
-                        catch (e) { console.warn("Could not parse ProfilePicURL for row:", row.RowID, row.ProfilePicURL); row.ProfilePicURL = null; }
-                    }
+                    const parseJsonField = (fieldValue, defaultVal = null) => {
+                        if (fieldValue && typeof fieldValue === 'string') {
+                            try { return JSON.parse(fieldValue); } 
+                            catch (e) { console.warn("Could not parse JSON field:", fieldValue, "for row:", row.RowID, e); return defaultVal; }
+                        }
+                        return fieldValue || defaultVal;
+                    };
+                    row.FollowUpActions = parseJsonField(row.FollowUpActions, []);
+                    row.DocumentJSON = parseJsonField(row.DocumentJSON, null);
+                    row.ImageJSON = parseJsonField(row.ImageJSON, null);
+                    row.ProfilePicURL = parseJsonField(row.ProfilePicURL, null);
                     return row;
                 });
                 allData.sort((a,b) => new Date(b.AttendanceDate) - new Date(a.AttendanceDate));
-                console.log("Processed allData:", allData.length > 0 ? allData[0] : "No data after processing");
+                console.log("Processed allData count:", allData.length, "Sample (if any):", allData.length > 0 ? allData[0] : "No data");
                 Swal.close();
             } catch(error) {
                 console.error("Fetch Error in fetchAllData:", error);
@@ -428,7 +423,7 @@
                 action: 'create',
                 level: form.level.value, classroom: form.classroom.value, studentNumber: form.studentNumber.value,
                 studentId: form.studentId.value, fullName: form.fullName.value, nickname: form.nickname.value,
-                profilePicData: profilePicData ? JSON.stringify(profilePicData) : null, // Added
+                profilePicData: profilePicData ? JSON.stringify(profilePicData) : null,
                 attendanceDate: form.attendanceDate.value, attendanceType: form.attendanceType.value,
                 attendanceOccurrence: form.attendanceOccurrence.value,
                 absenceCategory: form.attendanceType.value === 'การขาดเรียน' ? form.absenceCategory.value : "",
@@ -463,7 +458,7 @@
         }
         
         // --- Generic Functions (Edit, Delete, Modal for Files) ---
-        function showFilesModal(fileObject, type) { // Expects a file object, not a JSON string
+        function showFilesModal(fileObject, type) { 
             if (!fileObject || !fileObject.url) { 
                  Swal.fire('ไม่มีไฟล์', `ไม่พบไฟล์${type === 'images' ? 'รูปภาพ' : 'เอกสาร'}สำหรับรายการนี้`, 'info'); return;
             }
@@ -568,8 +563,6 @@
                         followUpActions: JSON.stringify(selectedFollowUps), 
                         followUpStatus: document.getElementById('swal-followUpStatus').value,
                         notes: document.getElementById('swal-notes').value
-                        // ProfilePicURL is not part of 1.1.2, so not passed for update here.
-                        // DocumentJSON and ImageJSON for attendance record are also not part of 1.1.2 for edit here.
                     }
                 }
             });
@@ -628,13 +621,13 @@
             const studentInfoContent = document.getElementById('student-info-content');
             const table = document.getElementById('individual-table'), thead = table.querySelector('thead'), tbody = table.querySelector('tbody');
             
-            console.log("Page 2: Searching for", { searchType, keyword, availableDataCount: allData.length });
+            // console.log("Page 2: Searching for", { searchType, keyword, availableDataCount: allData.length });
 
             if (!keyword && allData.length > 0) { 
                 Swal.fire('โปรดทราบ', 'กรุณาป้อนคำค้นหาสำหรับนักเรียน', 'info'); 
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">กรุณาป้อนคำค้นหา</td></tr>`; 
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center;">กรุณาป้อนคำค้นหา</td></tr>`; 
                 studentInfoDisplay.classList.add('hidden');
-                thead.innerHTML = `<tr><th>วันที่</th><th>ประเภท & รายละเอียด</th><th>ครั้งที่</th><th>ผลการติดตาม</th><th>สถานะติดตาม</th><th>หมายเหตุ</th><th>รูปภาพ</th><th>เอกสาร</th><th>จัดการ</th></tr>`;
+                thead.innerHTML = `<tr><th>วันที่</th><th>ประเภท & รายละเอียด</th><th>ครั้งที่</th><th>ผลการติดตาม</th><th>สถานะติดตาม</th><th>หมายเหตุ</th><th>ไฟล์แนบ</th><th>จัดการ</th></tr>`;
                 return; 
             }
             
@@ -644,20 +637,20 @@
                 return (valueToSearch || "").toString().toLowerCase().includes(keyword);
             });
             
-            console.log("Page 2: Filtered records for student(s):", studentRecords.length);
+            // console.log("Page 2: Filtered records for student(s):", studentRecords.length);
             
             tbody.innerHTML = ''; 
 
             if (studentRecords.length === 0) { 
                 thead.innerHTML = ''; 
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">ไม่พบข้อมูลนักเรียน: '${document.getElementById('individual-search-keyword').value}'</td></tr>`; 
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center;">ไม่พบข้อมูลนักเรียน: '${document.getElementById('individual-search-keyword').value}'</td></tr>`; 
                 studentInfoDisplay.classList.add('hidden');
                 return; 
             }
 
             const student = studentRecords[0]; 
-            let profilePicHtml = student.ProfilePicURL && student.ProfilePicURL.url ? `<img src="${student.ProfilePicURL.url}" alt="รูปนักเรียน">` : '<div style="width:100px; height:100px; background-color:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; float:left; margin-right:15px;"><i class="fas fa-user" style="font-size:3em; color:#aaa;"></i></div>';
-            studentInfoContent.innerHTML = `${profilePicHtml}<div><strong>${student.FullName} (${student.Nickname || '-'})</strong> - รหัส: ${student.StudentID} <br>ระดับชั้น: ${student.Level} ห้อง: ${student.Classroom} เลขที่: ${student.StudentNumber}</div><div style="clear:both;"></div>`;
+            let profilePicHtml = student.ProfilePicURL && student.ProfilePicURL.url ? `<img src="${student.ProfilePicURL.url}" alt="รูปนักเรียน">` : '<div style="width:100px; height:100px; background-color:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; float:left; margin-right:15px;"><i class="fas fa-user fa-3x" style="color:#aaa;"></i></div>';
+            studentInfoContent.innerHTML = `${profilePicHtml}<div><strong>${student.FullName} (${student.Nickname || '-'})</strong> - รหัส: ${student.StudentID} <br>ระดับชั้น: ${student.Level} ห้อง: ${student.Classroom} เลขที่: ${student.StudentNumber}</div><div class="clear-float"></div>`;
             studentInfoDisplay.classList.remove('hidden');
 
             thead.innerHTML = `<tr><th>วันที่</th><th>ประเภท & รายละเอียด</th><th>ครั้งที่</th><th>ผลการติดตาม</th><th>สถานะติดตาม</th><th>หมายเหตุ</th><th>รูปภาพ</th><th>เอกสาร</th><th>จัดการ</th></tr>`;
@@ -677,8 +670,8 @@
                     <td>${followUps}</td>
                     <td>${row.FollowUpStatus || 'N/A'}</td>
                     <td>${row.Notes || '-'}</td>
-                    <td><button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(${JSON.stringify(row.ImageJSON)}, "images")' ${!row.ImageJSON ? 'disabled' : ''}><i class="fas fa-image"></i></button></td>
-                    <td><button class="btn btn-primary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(${JSON.stringify(row.DocumentJSON)}, "docs")' ${!row.DocumentJSON ? 'disabled' : ''}><i class="fas fa-file-alt"></i></button></td>
+                    <td><button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(allData.find(d=>d.RowID==${row.RowID}).ImageJSON, "images")' ${!row.ImageJSON ? 'disabled' : ''}><i class="fas fa-image"></i></button></td>
+                    <td><button class="btn btn-primary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(allData.find(d=>d.RowID==${row.RowID}).DocumentJSON, "docs")' ${!row.DocumentJSON ? 'disabled' : ''}><i class="fas fa-file-alt"></i></button></td>
                     <td><button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick="editRecord(${row.RowID})"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" style="padding: 5px 8px;" onclick="deleteRecord(${row.RowID})"><i class="fas fa-trash"></i></button></td>`;
                 tbody.appendChild(tr);
             });
@@ -708,7 +701,7 @@
             const valueEl = document.getElementById('summary-filter-value');
             const value = valueEl ? valueEl.value : '';
             
-            console.log("Page 3: Applying Summary Filters:", { type, value, availableDataCount: allData.length });
+            // console.log("Page 3: Applying Summary Filters:", { type, value, availableDataCount: allData.length });
 
             const filtered = allData.filter(row => {
                  if (!row || typeof row !== 'object') return false;
@@ -724,13 +717,12 @@
                     default: return true;
                 }
             });
-            console.log("Page 3: Filtered Data:", filtered.length);
+            // console.log("Page 3: Filtered Data:", filtered.length);
             renderSummaryTable(filtered);
         }
 
         function renderSummaryTable(data) {
             const table = document.getElementById('summary-table'), thead = table.querySelector('thead'), tbody = table.querySelector('tbody');
-            // ระดับชั้น ห้อง รหัสประจำตัว ชื่อ ชื่อเล่น วันที่ ประเภทพฤติกรรม ครั้งที่ พฤติกรรม(รายละเอียด) ไฟล์เอกสารและไฟล์รูปภาพ
             thead.innerHTML = `<tr><th>ระดับชั้น</th><th>ห้อง</th><th>ชื่อ-สกุล</th><th>ชื่อเล่น</th><th>รหัสประจำตัว</th><th>วันที่</th><th>ประเภท</th><th>รายละเอียด</th><th>ครั้งที่</th><th>สถานะติดตาม</th><th>รูปภาพ</th><th>เอกสาร</th><th>จัดการ</th></tr>`;
             tbody.innerHTML = '';
             if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="13" style="text-align: center;">ไม่พบข้อมูล</td></tr>`; return; }
@@ -739,8 +731,8 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `<td>${row.Level}</td><td>ห้อง ${row.Classroom}</td><td>${row.FullName}</td><td>${row.Nickname || '-'}</td><td>${row.StudentID}</td><td>${row.AttendanceDate}</td><td>${row.AttendanceType}</td><td>${detail}</td><td>${row.AttendanceOccurrence}</td>
                     <td>${row.FollowUpStatus || 'N/A'}</td>
-                    <td><button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(${JSON.stringify(row.ImageJSON)}, "images")' ${!row.ImageJSON ? 'disabled' : ''}><i class="fas fa-image"></i></button></td>
-                    <td><button class="btn btn-primary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(${JSON.stringify(row.DocumentJSON)}, "docs")' ${!row.DocumentJSON ? 'disabled' : ''}><i class="fas fa-file-alt"></i></button></td>
+                    <td><button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(allData.find(d=>d.RowID==${row.RowID}).ImageJSON, "images")' ${!row.ImageJSON ? 'disabled' : ''}><i class="fas fa-image"></i></button></td>
+                    <td><button class="btn btn-primary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(allData.find(d=>d.RowID==${row.RowID}).DocumentJSON, "docs")' ${!row.DocumentJSON ? 'disabled' : ''}><i class="fas fa-file-alt"></i></button></td>
                     <td><button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick="editRecord(${row.RowID})"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" style="padding: 5px 8px;" onclick="deleteRecord(${row.RowID})"><i class="fas fa-trash"></i></button></td>`;
                 tbody.appendChild(tr);
             });
@@ -783,7 +775,7 @@
             const wrapper = document.getElementById('charts-wrapper');
             wrapper.innerHTML = '';
             
-            console.log("Page 4: Rendering charts for filter:", filterType, "Available data count:", allData.length);
+            // console.log("Page 4: Rendering charts for filter:", filterType, "Available data count:", allData.length);
 
             let dataForCharts = [...allData];
             let chartTitlePrefix = '';
@@ -798,27 +790,24 @@
                 dataForCharts = allData.filter(r => r.AttendanceDate && r.AttendanceDate.startsWith(val)); chartTitlePrefix = `เดือน ${val}: `; 
             }
             
-            console.log("Page 4: Data for charts after filtering:", dataForCharts.length, "Filter type:", filterType);
+            // console.log("Page 4: Data for charts after filtering:", dataForCharts.length, "Filter type:", filterType);
 
             if (dataForCharts.length === 0 && filterType !== 'top10') {
                  wrapper.innerHTML = '<p class="text-center" style="margin-top:20px;">ไม่พบข้อมูลสำหรับสร้างกราฟตามเงื่อนไข</p>'; return;
             }
 
             if (filterType === 'all') {
-                wrapper.innerHTML = `<div class="chart-grid"><div id="chart-all-level-type-detail"></div></div><div class="chart-grid" style="margin-top:20px;"><div id="chart-all-followup-status"></div><div id="chart-all-top-followup-actions"></div></div>`;
+                wrapper.innerHTML = `<div class="chart-grid"><div id="chart-all-level-type-detail"></div></div><div class="chart-grid" style="margin-top:20px;"><div id="chart-all-followup-status"></div></div>`;
                 createChart(dataForCharts, 'bar', 'chart-all-level-type-detail', `ข้อมูลการมาเรียน แยกตามระดับชั้น ประเภท และรายละเอียด`, 'Level_AttendanceType_Detail');
                 createChart(dataForCharts, 'pie', 'chart-all-followup-status', `ภาพรวมสถานะการติดตาม`, 'FollowUpStatus');
-                createChart(dataForCharts, 'bar', 'chart-all-top-followup-actions', `การติดตามผลยอดนิยม (Top 5)`, 'FollowUpActions');
             } else if (filterType === 'level') {
-                wrapper.innerHTML = `<div class="chart-grid"><div id="chart-level-room-type-detail"></div></div><div class="chart-grid" style="margin-top:20px;"><div id="chart-level-followup-status"></div><div id="chart-level-top-followup-actions"></div></div>`;
+                wrapper.innerHTML = `<div class="chart-grid"><div id="chart-level-room-type-detail"></div></div><div class="chart-grid" style="margin-top:20px;"><div id="chart-level-followup-status"></div></div>`;
                 createChart(dataForCharts, 'bar', 'chart-level-room-type-detail', `${chartTitlePrefix}ข้อมูลการมาเรียน แยกตามห้อง ประเภท และรายละเอียด`, 'Classroom_AttendanceType_Detail');
                  createChart(dataForCharts, 'pie', 'chart-level-followup-status', `${chartTitlePrefix}สถานะการติดตาม`, 'FollowUpStatus');
-                createChart(dataForCharts, 'bar', 'chart-level-top-followup-actions', `${chartTitlePrefix}การติดตามผล (Top 5)`, 'FollowUpActions');
             } else if (filterType === 'month') {
-                 wrapper.innerHTML = `<div class="chart-grid"><div id="chart-month-level-type-detail"></div></div><div class="chart-grid" style="margin-top:20px;"><div id="chart-month-followup-status"></div><div id="chart-month-top-followup-actions"></div></div>`;
+                 wrapper.innerHTML = `<div class="chart-grid"><div id="chart-month-level-type-detail"></div></div><div class="chart-grid" style="margin-top:20px;"><div id="chart-month-followup-status"></div></div>`;
                  createChart(dataForCharts, 'bar', 'chart-month-level-type-detail', `${chartTitlePrefix}ข้อมูลการมาเรียน แยกตามระดับชั้น ประเภท และรายละเอียด`, 'Level_AttendanceType_Detail');
                  createChart(dataForCharts, 'pie', 'chart-month-followup-status', `${chartTitlePrefix}สถานะการติดตาม`, 'FollowUpStatus');
-                 createChart(dataForCharts, 'bar', 'chart-month-top-followup-actions', `${chartTitlePrefix}การติดตามผล (Top 5)`, 'FollowUpActions');
             } else if (filterType === 'top10') {
                  wrapper.innerHTML = `<div id="chart-top10-students" style="max-height: 500px;"></div>`;
                  if (allData.length === 0) { wrapper.innerHTML = '<p class="text-center">ยังไม่มีข้อมูลนักเรียน</p>'; return; }
@@ -866,24 +855,24 @@
             }
 
             let entries = Object.entries(aggregatedData).filter(([key, value]) => key && key.trim() !== "" && key !== "ไม่ระบุ" && key !== "ไม่ได้ระบุการติดตาม" && value > 0);
-            if (aggregatedData["ไม่ระบุ"] > 0 && groupByFnOrKey !== 'FullName' && !groupByFnOrKey.includes('_Detail')) entries.push(["ไม่ระบุ", aggregatedData["ไม่ระบุ"]]); // Avoid "ไม่ระบุ" for detail charts
+            if (aggregatedData["ไม่ระบุ"] > 0 && groupByFnOrKey !== 'FullName' && !groupByFnOrKey.includes('_Detail')) entries.push(["ไม่ระบุ", aggregatedData["ไม่ระบุ"]]);
             if (aggregatedData["ไม่ได้ระบุการติดตาม"] > 0 && groupByFnOrKey === 'FollowUpActions') entries.push(["ไม่ได้ระบุการติดตาม", aggregatedData["ไม่ได้ระบุการติดตาม"]]);
             
             if (groupByFnOrKey === 'FullName' || groupByFnOrKey === 'FollowUpActions') { 
                 entries = entries.sort(([,a],[,b]) => b-a).slice(0, (groupByFnOrKey === 'FullName' ? 10 : 5)); 
-            } else if (type === 'bar' && !groupByFnOrKey.includes('_Detail')) { // For general bar charts, sort by value
+            } else if (type === 'bar' && !groupByFnOrKey.includes('_Detail')) { 
                  entries = entries.sort(([,a],[,b]) => b-a);
-            } // For _Detail charts, retain natural order or sort alphabetically if needed
+            } 
 
             const labels = entries.map(e => e[0]);
             const chartDataValues = entries.map(e => e[1]);
             
             if(labels.length === 0){
                 container.innerHTML = `<p style="text-align:center; padding-top: 20px;">ไม่พบข้อมูลสำหรับสร้างกราฟ '${title}'</p>`;
-                console.log(`No data for chart: ${title}`, {groupByFnOrKey, dataSample: data.slice(0,2)});
+                // console.log(`No data for chart: ${title}`, {groupByFnOrKey, dataSample: data.slice(0,2)});
                 return;
             }
-            console.log(`Chart Data for '${title}':`, {labels, chartDataValues});
+            // console.log(`Chart Data for '${title}':`, {labels, chartDataValues});
 
             charts[containerId] = new Chart(ctx, {
                 type: type,
@@ -893,7 +882,7 @@
                 },
                 options: { 
                     responsive: true, 
-                    maintainAspectRatio: type !== 'bar',
+                    maintainAspectRatio: false, // Allow charts to resize height more freely
                     indexAxis: (type === 'bar' && labels.length > 6 && (groupByFnOrKey.includes('_Detail') || groupByFnOrKey === 'FollowUpActions' || groupByFnOrKey === 'FullName')) ? 'y' : 'x',
                     plugins: { 
                         title: { display: true, text: title, font: { size: 16 } }, 
