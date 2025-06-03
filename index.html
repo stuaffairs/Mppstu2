@@ -65,7 +65,7 @@
         #individual-student-info-display div:not(:has(img)) { overflow: hidden; } 
         .clear-float { clear:both; }
         @media (min-width: 992px) { 
-            .chart-grid { grid-template-columns: 1fr 1fr; }
+            .chart-grid { grid-template-columns: 1fr 1fr; } /* 2 columns for larger screens */
         }
         @media (max-width: 768px) {
             .nav-button { flex-grow: 1; text-align: center; font-size: 0.95em; padding: 12px 15px;}
@@ -109,7 +109,7 @@
                         <label for="profilePicFile">รูปประจำตัวนักเรียน (1 รูป)</label>
                         <input type="file" id="profilePicFile" name="profilePicFile" class="form-control" accept="image/*">
                     </div>
-                    </div>
+                </div>
 
                 <div class="card">
                     <h3><i class="fas fa-calendar-check"></i> ข้อมูลการมาโรงเรียน</h3>
@@ -243,12 +243,13 @@
             populateStaticDropdowns();
             setupEventListeners();
             fetchAllData().then(() => {
-                console.log("Initial data fetched:", allData.length, "records");
+                console.log("Initial data fetched. Total records:", allData.length);
                 if(allData && allData.length > 0) {
-                    applySummaryFilters(); 
-                    setupStatsPageControls();
+                    applySummaryFilters(); // Initial render for summary page
+                    setupStatsPageControls(); // Setup stats filters and initial charts
                 } else {
-                    document.getElementById('summary-table').querySelector('tbody').innerHTML = `<tr><td colspan="13" style="text-align: center;">ไม่พบข้อมูล หรือกำลังรอการโหลด</td></tr>`;
+                    // Handle case where no data is loaded initially
+                    document.getElementById('summary-table').querySelector('tbody').innerHTML = `<tr><td colspan="13" style="text-align: center;">ไม่พบข้อมูล</td></tr>`;
                     document.getElementById('charts-wrapper').innerHTML = `<p class="text-center">ไม่พบข้อมูลสำหรับสร้างกราฟ</p>`;
                 }
             }).catch(error => {
@@ -260,7 +261,7 @@
         function populateStaticDropdowns() {
             const populate = (elId, start, end, formatFn, addEmptyOption = false) => {
                 const el = document.getElementById(elId);
-                if (!el) { console.error("Element not found for dropdown:", elId); return; }
+                if (!el) { console.warn("Element not found for dropdown:", elId); return; }
                 el.innerHTML = addEmptyOption ? '<option value="">-- เลือก --</option>' : '';
                 for (let i = start; i <= end; i++) el.innerHTML += formatFn(i);
             };
@@ -347,7 +348,7 @@
                     const parseJsonField = (fieldValue, defaultVal = null) => {
                         if (fieldValue && typeof fieldValue === 'string') {
                             try { return JSON.parse(fieldValue); } 
-                            catch (e) { /* console.warn("Could not parse JSON field:", fieldValue, "for row:", row.RowID, e); */ return defaultVal; }
+                            catch (e) { console.warn("Could not parse JSON for field. Value:", fieldValue, "Error:", e); return defaultVal; }
                         }
                         return fieldValue || defaultVal;
                     };
@@ -358,7 +359,7 @@
                     return row;
                 });
                 allData.sort((a,b) => new Date(b.AttendanceDate) - new Date(a.AttendanceDate));
-                // console.log("Processed allData count:", allData.length, "Sample (if any):", allData.length > 0 ? allData[0] : "No data");
+                console.log("Processed allData. Count:", allData.length, ". Sample record (if any):", allData.length > 0 ? allData[0] : "N/A");
                 Swal.close();
             } catch(error) {
                 console.error("Fetch Error in fetchAllData:", error);
@@ -409,11 +410,11 @@
             });
 
             const form = e.target;
-            const profilePicFile = form.profilePicFile.files[0]; // New
+            const profilePicFile = form.profilePicFile.files[0]; 
             const documentFile = form.docFile.files[0];
             const imageFile = form.imgFile.files[0];   
             
-            const profilePicData = await fileToBase64(profilePicFile); // New
+            const profilePicData = await fileToBase64(profilePicFile); 
             const documentData = await fileToBase64(documentFile);
             const imageData = await fileToBase64(imageFile);
 
@@ -423,7 +424,7 @@
                 action: 'create',
                 level: form.level.value, classroom: form.classroom.value, studentNumber: form.studentNumber.value,
                 studentId: form.studentId.value, fullName: form.fullName.value, nickname: form.nickname.value,
-                profilePicData: profilePicData ? JSON.stringify(profilePicData) : null, // New
+                profilePicData: profilePicData ? JSON.stringify(profilePicData) : null, 
                 attendanceDate: form.attendanceDate.value, attendanceType: form.attendanceType.value,
                 attendanceOccurrence: form.attendanceOccurrence.value,
                 absenceCategory: form.attendanceType.value === 'การขาดเรียน' ? form.absenceCategory.value : "",
@@ -623,12 +624,11 @@
             const studentInfoContent = document.getElementById('student-info-content');
             const table = document.getElementById('individual-table'), thead = table.querySelector('thead'), tbody = table.querySelector('tbody');
             
-            console.log("DEBUG Page 2: Search - Type:", searchType, "Keyword:", keyword);
-            if(allData.length > 0) { console.log("DEBUG Page 2: Sample allData[0] for property check:", allData[0]); }
+            console.log("DEBUG Page 2: Search Attempt - Type:", searchType, "Keyword:", `"${keyword}"`);
 
-            thead.innerHTML = `<tr><th>วันที่</th><th>ประเภท & รายละเอียด</th><th>ครั้งที่</th><th>ผลการติดตาม</th><th>สถานะติดตาม</th><th>หมายเหตุ</th><th>รูปภาพ</th><th>เอกสาร</th><th>จัดการ</th></tr>`;
+            thead.innerHTML = `<tr><th>วันที่</th><th>ประเภท & รายละเอียด</th><th>ครั้งที่</th><th>ผลการติดตาม</th><th>สถานะติดตาม</th><th>หมายเหตุ</th><th>รูปภาพ</th><th>เอกสาร</th><th>จัดการ</th></tr>`; 
             
-            if (!keyword && allData.length > 0) { 
+            if (!keyword) { 
                 Swal.fire('โปรดทราบ', 'กรุณาป้อนคำค้นหาสำหรับนักเรียน', 'info'); 
                 tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">กรุณาป้อนคำค้นหา</td></tr>`; 
                 studentInfoDisplay.classList.add('hidden');
@@ -636,12 +636,13 @@
             }
             
             const studentRecords = allData.filter(row => {
-                if(!row || typeof row !== 'object') { console.warn("DEBUG Page 2: Invalid row in allData", row); return false; }
+                if(!row || typeof row !== 'object') return false; 
                 const valueToSearch = row[searchType]; 
                 return (valueToSearch || "").toString().toLowerCase().includes(keyword);
             });
             
             console.log("DEBUG Page 2: Filtered studentRecords count:", studentRecords.length);
+            if(studentRecords.length > 0) console.log("DEBUG Page 2: First found record for student:", studentRecords[0]);
             
             tbody.innerHTML = ''; 
 
@@ -651,7 +652,7 @@
                 return; 
             }
 
-            const student = studentRecords[0]; 
+            const student = studentRecords[0]; // Use first record for student details
             let profilePicHtml = student.ProfilePicURL && student.ProfilePicURL.url ? `<img src="${student.ProfilePicURL.url}" alt="รูปนักเรียน">` : '<div style="width:100px; height:100px; background-color:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; float:left; margin-right:15px;"><i class="fas fa-user fa-3x" style="color:#aaa;"></i></div>';
             studentInfoContent.innerHTML = `${profilePicHtml}<div><strong>${student.FullName} (${student.Nickname || '-'})</strong> - รหัส: ${student.StudentID} <br>ระดับชั้น: ${student.Level} ห้อง: ${student.Classroom} เลขที่: ${student.StudentNumber}</div><div class="clear-float"></div>`;
             studentInfoDisplay.classList.remove('hidden');
@@ -702,13 +703,11 @@
             const valueEl = document.getElementById('summary-filter-value');
             const value = valueEl ? valueEl.value : '';
             
-            // console.log("Page 3: Applying Summary Filters:", { type, value, availableDataCount: allData.length });
-
             const filtered = allData.filter(row => {
                  if (!row || typeof row !== 'object') return false;
                 switch(type) {
                     case 'all': return true;
-                    case 'classroom': return String(row.Classroom) === value.replace('ห้อง ',''); // Make sure to compare just number
+                    case 'classroom': return String(row.Classroom) === value.replace('ห้อง ',''); 
                     case 'date': return row.AttendanceDate === value;
                     case 'month': return row.AttendanceDate && row.AttendanceDate.startsWith(value);
                     case 'level': return row.Level === value;
@@ -718,7 +717,6 @@
                     default: return true;
                 }
             });
-            // console.log("Page 3: Filtered Data:", filtered.length);
             renderSummaryTable(filtered);
         }
 
@@ -806,7 +804,7 @@
                  createChart(dataForCharts, 'bar', 'chart-month-level-type-detail', `${chartTitlePrefix}ข้อมูลการมาเรียน แยกตามระดับชั้น ประเภท และรายละเอียด`, 'Level_AttendanceType_Detail');
                  createChart(dataForCharts, 'pie', 'chart-month-followup-status', `${chartTitlePrefix}สถานะการติดตาม`, 'FollowUpStatus');
             } else if (filterType === 'top10') {
-                 wrapper.innerHTML = `<div id="chart-top10-students" style="max-height: 600px;"></div>`;
+                 wrapper.innerHTML = `<div id="chart-top10-students" style="max-height: 600px;"></div>`; // Increased height
                  if (allData.length === 0) { wrapper.innerHTML = '<p class="text-center">ยังไม่มีข้อมูลนักเรียน</p>'; return; }
                  createChart(allData, 'bar', 'chart-top10-students', `นักเรียนที่ถูกบันทึกข้อมูลสูงสุด 10 อันดับ (นับตามจำนวนครั้งที่บันทึก)`, 'FullName');
             }
@@ -843,9 +841,7 @@
                         const defaultKey = (groupByFnOrKey === 'FollowUpActions') ? "ไม่ได้ระบุการติดตาม" 
                                         : (groupByFnOrKey === 'FullName' ? "นักเรียน(ไม่ระบุชื่อ)"
                                         : "ไม่ระบุ");
-                        if (groupByFnOrKey !== 'FullName' || (groupByFnOrKey === 'FullName' && !keys) ) {
-                             acc[defaultKey] = (acc[defaultKey] || 0) + 1;
-                        }
+                        if (groupByFnOrKey !== 'FullName' || (groupByFnOrKey === 'FullName' && !keys) ) acc[defaultKey] = (acc[defaultKey] || 0) + 1;
                         return acc;
                     }
                     if (groupByFnOrKey === 'FollowUpActions' && Array.isArray(keys)) { 
@@ -860,16 +856,15 @@
             }
 
             let entries = Object.entries(aggregatedData).filter(([key, value]) => key && key.trim() !== "" && value > 0);
-            // Ensure "ไม่ระบุ" or "ไม่ได้ระบุการติดตาม" are not completely filtered out if they have counts and are not for FullName or _Detail charts
+            if (entries.length > 1 || groupByFnOrKey === 'FullName') { 
+                entries = entries.filter(([key,]) => key !== "ไม่ระบุ" && key !== "ไม่ได้ระบุการติดตาม" && key !== "นักเรียน(ไม่ระบุชื่อ)");
+            }
+            
             if (aggregatedData["ไม่ระบุ"] > 0 && groupByFnOrKey !== 'FullName' && !groupByFnOrKey.includes('_Detail') && !entries.find(e => e[0] === "ไม่ระบุ")) {
                 entries.push(["ไม่ระบุ", aggregatedData["ไม่ระบุ"]]);
             }
             if (aggregatedData["ไม่ได้ระบุการติดตาม"] > 0 && groupByFnOrKey === 'FollowUpActions' && !entries.find(e => e[0] === "ไม่ได้ระบุการติดตาม")) {
                 entries.push(["ไม่ได้ระบุการติดตาม", aggregatedData["ไม่ได้ระบุการติดตาม"]]);
-            }
-            // Exclude "นักเรียน(ไม่ระบุชื่อ)" for Top 10 specifically
-            if (groupByFnOrKey === 'FullName') {
-                entries = entries.filter(([key,]) => key !== "นักเรียน(ไม่ระบุชื่อ)");
             }
             
             if (groupByFnOrKey === 'FullName' || groupByFnOrKey === 'FollowUpActions') { 
