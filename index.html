@@ -55,7 +55,7 @@
         .checkbox-item input[type="checkbox"] { margin-right: 12px; width: 18px; height: 18px; accent-color: var(--primary-color); }
         .search-filters { display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end; padding: 20px; background-color: var(--light-purple-bg); border-radius: 8px; margin-bottom: 20px;}
         .search-filters .form-group { margin-bottom: 0;}
-        .swal2-html-container { text-align: left !important; font-size: 1em !important; }
+        .swal2-html-container { text-align: left !important; font-size: 1em !important; max-height: 60vh; overflow-y: auto;}
         .swal2-input, .swal2-select, .swal2-textarea { font-size: 1em !important; border-radius: 6px !important; }
         .swal2-actions button { font-size: 1em !important; padding: 10px 20px !important; margin: 5px !important; }
         @media (max-width: 768px) {
@@ -130,14 +130,10 @@
                 </div>
 
                 <div class="card">
-                    <h3><i class="fas fa-paperclip"></i> แนบไฟล์ (สูงสุดประเภทละ 3 ไฟล์)</h3>
+                    <h3><i class="fas fa-paperclip"></i> แนบไฟล์</h3>
                     <div class="form-grid">
-                        <div class="form-group"><label for="docFile1">เอกสาร 1</label><input type="file" id="docFile1" name="docFiles" class="form-control" accept=".pdf,.doc,.docx"></div>
-                        <div class="form-group"><label for="docFile2">เอกสาร 2</label><input type="file" id="docFile2" name="docFiles" class="form-control" accept=".pdf,.doc,.docx"></div>
-                        <div class="form-group"><label for="docFile3">เอกสาร 3</label><input type="file" id="docFile3" name="docFiles" class="form-control" accept=".pdf,.doc,.docx"></div>
-                        <div class="form-group"><label for="imgFile1">รูปภาพ 1</label><input type="file" id="imgFile1" name="imgFiles" class="form-control" accept="image/*"></div>
-                        <div class="form-group"><label for="imgFile2">รูปภาพ 2</label><input type="file" id="imgFile2" name="imgFiles" class="form-control" accept="image/*"></div>
-                        <div class="form-group"><label for="imgFile3">รูปภาพ 3</label><input type="file" id="imgFile3" name="imgFiles" class="form-control" accept="image/*"></div>
+                        <div class="form-group"><label for="docFile">เอกสาร (1 ไฟล์)</label><input type="file" id="docFile" name="docFile" class="form-control" accept=".pdf,.doc,.docx"></div>
+                        <div class="form-group"><label for="imgFile">รูปภาพ (1 ไฟล์)</label><input type="file" id="imgFile" name="imgFile" class="form-control" accept="image/*"></div>
                     </div>
                 </div>
 
@@ -163,6 +159,10 @@
                     </div>
                     <button id="individual-search-btn" class="btn btn-secondary"><i class="fas fa-search"></i> ค้นหา</button>
                     <a href="https://docs.google.com/spreadsheets/d/1YEqS1zEf-ej7lfqLIpej6j2YXbAgCES3VC_2ODH721Y" target="_blank" class="btn btn-success"><i class="fab fa-google-drive"></i> เปิด Google Sheet</a>
+                </div>
+                <div id="individual-student-info-display" class="card hidden" style="background-color: var(--light-purple-bg);">
+                    <h4>ข้อมูลนักเรียน:</h4>
+                    <p id="student-info-content"></p>
                 </div>
                 <div class="table-container">
                     <table id="individual-table">
@@ -231,8 +231,8 @@
             populateStaticDropdowns();
             setupEventListeners();
             fetchAllData().then(() => {
-                console.log("Initial data fetched:", allData);
-                applySummaryFilters(); // Render summary table with "all" filter initially
+                console.log("Initial data fetched:", allData.length, "records");
+                applySummaryFilters(); 
                 setupStatsPageControls(); 
             }).catch(error => {
                 console.error("Error during initial data fetch or setup:", error);
@@ -243,7 +243,7 @@
         function populateStaticDropdowns() {
             const populate = (elId, start, end, formatFn, addEmptyOption = false) => {
                 const el = document.getElementById(elId);
-                if (!el) { console.error("Element not found:", elId); return; }
+                if (!el) { console.error("Element not found for dropdown:", elId); return; }
                 el.innerHTML = addEmptyOption ? '<option value="">-- เลือก --</option>' : '';
                 for (let i = start; i <= end; i++) el.innerHTML += formatFn(i);
             };
@@ -253,31 +253,35 @@
             populate('attendanceOccurrence', 1, 20, i => `<option value="ครั้งที่ ${i}">ครั้งที่ ${i}</option>`);
 
             const followUpContainer = document.getElementById('followUpActions');
-            followUpOptions.forEach(opt => {
-                const id = `follow-${opt.replace(/[^a-zA-Z0-9]/g, "")}`;
-                followUpContainer.innerHTML += `
-                    <div class="checkbox-item">
-                        <input type="checkbox" id="${id}" name="followUp" value="${opt}">
-                        <label for="${id}">${opt}</label>
-                    </div>`;
-            });
+            if(followUpContainer) {
+                followUpOptions.forEach(opt => {
+                    const id = `follow-${opt.replace(/[^a-zA-Z0-9ก-๙]/g, "")}`; // Make ID more robust
+                    followUpContainer.innerHTML += `
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="${id}" name="followUp" value="${opt}">
+                            <label for="${id}">${opt}</label>
+                        </div>`;
+                });
+            }
             
-            document.getElementById('attendanceDate').valueAsDate = new Date();
-            setupSummaryPageFilters(); // Setup filters for summary page
+            const attendanceDateEl = document.getElementById('attendanceDate');
+            if (attendanceDateEl) attendanceDateEl.valueAsDate = new Date();
+            
+            setupSummaryPageFilters();
         }
 
         function setupEventListeners() {
             document.querySelectorAll('.nav-button').forEach(btn => btn.addEventListener('click', (e) => {
-                 document.querySelector('.nav-button.active').classList.remove('active');
+                 const currentActive = document.querySelector('.nav-button.active');
+                 if(currentActive) currentActive.classList.remove('active');
                  e.currentTarget.classList.add('active');
                  const pageId = e.currentTarget.getAttribute('onclick').match(/'([^']+)'/)[1];
                  showPage(pageId);
-                 if(pageId === 'page-summary') {
-                     applySummaryFilters();
-                 } else if (pageId === 'page-stats') {
-                     handleStatsFilterChange();
-                 } else if (pageId === 'page-individual') {
-                     document.getElementById('individual-table').querySelector('tbody').innerHTML = `<tr><td colspan="7" style="text-align: center;">กรุณาป้อนคำค้นหา</td></tr>`; // Clear or prompt
+                 if(pageId === 'page-summary') applySummaryFilters();
+                 else if (pageId === 'page-stats') handleStatsFilterChange();
+                 else if (pageId === 'page-individual') {
+                    document.getElementById('individual-table').querySelector('tbody').innerHTML = `<tr><td colspan="9" style="text-align: center;">กรุณาป้อนคำค้นหา</td></tr>`;
+                    document.getElementById('individual-student-info-display').classList.add('hidden');
                  }
             }));
 
@@ -304,16 +308,19 @@
         }
 
         async function fetchAllData() {
-            Swal.fire({ title: 'กำลังโหลดข้อมูล...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            Swal.fire({ title: 'กำลังโหลดข้อมูล...', imageUrl: 'https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/0.16.1/images/loader-large.gif', imageWidth:100, imageHeight:100, showConfirmButton: false, allowOutsideClick: false });
             try {
                 const response = await fetch(`${SCRIPT_URL}?action=read`);
-                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}, message: ${await response.text()}`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
                 allData = await response.json();
-                console.log("Data fetched from GAS:", allData);
+                console.log("Data fetched from GAS:", allData.length, "records. Sample:", allData.length > 0 ? allData[0] : "No data");
                 if (!Array.isArray(allData)) {
                     console.error("Fetched data is not an array:", allData);
-                    allData = []; // Fallback to empty array
-                    throw new Error("รูปแบบข้อมูลที่ได้รับไม่ถูกต้อง");
+                    allData = []; 
+                    throw new Error("รูปแบบข้อมูลที่ได้รับไม่ถูกต้องจากเซิร์ฟเวอร์");
                 }
                 allData.sort((a,b) => new Date(b.AttendanceDate) - new Date(a.AttendanceDate));
                 Swal.close();
@@ -366,10 +373,12 @@
             });
 
             const form = e.target;
-            const docPromises = [form.docFile1, form.docFile2, form.docFile3].map(input => fileToBase64(input.files[0]));
-            const imgPromises = [form.imgFile1, form.imgFile2, form.imgFile3].map(input => fileToBase64(input.files[0]));
+            const documentFile = form.docFile.files[0];
+            const imageFile = form.imgFile.files[0];
             
-            const [documentsDataArray, imagesDataArray] = await Promise.all([ Promise.all(docPromises), Promise.all(imgPromises) ]);
+            const documentData = await fileToBase64(documentFile);
+            const imageData = await fileToBase64(imageFile);
+
             const selectedFollowUps = Array.from(form.querySelectorAll('input[name="followUp"]:checked')).map(cb => cb.value);
 
             const params = new URLSearchParams({
@@ -383,10 +392,10 @@
                 absenceDetailNonContinuous: (form.attendanceType.value === 'การขาดเรียน' && form.absenceCategory.value === 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)') ? form.absenceDetailNonContinuous.value : "",
                 lateDetail: form.attendanceType.value === 'การมาสาย' ? form.lateDetail.value : "",
                 followUpActions: JSON.stringify(selectedFollowUps),
-                followUpStatus: form.followUpStatus.value, // Added
+                followUpStatus: form.followUpStatus.value,
                 notes: form.notes.value,
-                documentsData: JSON.stringify(documentsDataArray.filter(d => d)),
-                imagesData: JSON.stringify(imagesDataArray.filter(i => i))
+                documentData: documentData ? JSON.stringify(documentData) : null,
+                imageData: imageData ? JSON.stringify(imageData) : null
             });
 
             try {
@@ -410,16 +419,16 @@
         }
         
         // --- Generic Functions (Edit, Delete, Modal for Files) ---
-        function showFilesModal(filesJson, type) {
-            const files = (typeof filesJson === 'string') ? JSON.parse(filesJson || "[]") : (filesJson || []);
-            if (!files || files.length === 0) {
+        function showFilesModal(fileJson, type) {
+            const file = (typeof fileJson === 'string') ? JSON.parse(fileJson || null) : fileJson;
+            if (!file || !file.url) {
                 Swal.fire('ไม่มีไฟล์', `ไม่พบไฟล์${type === 'images' ? 'รูปภาพ' : 'เอกสาร'}สำหรับรายการนี้`, 'info'); return;
             }
-            let content = '<div style="max-height: 400px; overflow-y: auto;">';
+            let content = '<div style="max-height: 400px; overflow-y: auto; text-align: center;">';
             if (type === 'images') {
-                files.forEach(file => { content += `<div style="margin-bottom: 15px; text-align: center;"><a href="${file.url}" target="_blank">${file.name}</a><br><img src="${file.url}" style="max-width: 100%; max-height:300px; height: auto; margin-top: 5px; border-radius: 5px;"></div>`; });
+                content += `<a href="${file.url}" target="_blank">${file.name}</a><br><img src="${file.url}" style="max-width: 100%; max-height:350px; height: auto; margin-top: 5px; border-radius: 5px;">`;
             } else {
-                files.forEach(file => { content += `<p style="text-align: center;"><a href="${file.url}" target="_blank" class="btn btn-primary btn-sm"><i class="fas fa-download"></i> ${file.name}</a></p>`; });
+                content += `<p><a href="${file.url}" target="_blank" class="btn btn-primary btn-sm"><i class="fas fa-download"></i> ${file.name}</a></p>`;
             }
             content += '</div>';
             Swal.fire({ title: `ไฟล์${type === 'images' ? 'รูปภาพ' : 'เอกสาร'}`, html: content, width: '80%' });
@@ -429,9 +438,8 @@
             const rowData = allData.find(r => r.RowID == rowId);
             if (!rowData) { Swal.fire('ผิดพลาด', 'ไม่พบข้อมูล', 'error'); return; }
 
-            // Helper to generate select options
             const genOptions = (start, end, formatFn, selectedVal) => Array.from({length: end-start+1}, (_, i) => i+start).map(val => `<option value="${formatFn(val).value}" ${formatFn(val).value == selectedVal ? 'selected':''}>${formatFn(val).text}</option>`).join('');
-            const genSimpleOptions = (arr, selectedVal) => arr.map(val => `<option value="${val}" ${val == selectedVal ? 'selected':''}>${val}</option>`).join('');
+            const genSimpleOptions = (arr, selectedVal, addEmpty = true) => (addEmpty ? '<option value="">-- เลือก --</option>' : '') + arr.map(val => `<option value="${val}" ${val == selectedVal ? 'selected':''}>${val}</option>`).join('');
             
             const modalHtml = `
                 <div style="text-align:left;">
@@ -440,22 +448,22 @@
                         <p><strong>ระดับชั้น:</strong> ${rowData.Level} <strong>ห้อง:</strong> ${rowData.Classroom} <strong>เลขที่:</strong> ${rowData.StudentNumber}</p>
                         <p><strong>ชื่อ-สกุล:</strong> ${rowData.FullName} (${rowData.Nickname || '-'}) <strong>รหัส:</strong> ${rowData.StudentID}</p>
                     </div> <hr>
-                    <h4><i class="fas fa-calendar-check"></i> แก้ไขข้อมูลการมาโรงเรียน</h4>
+                    <h4><i class="fas fa-calendar-check"></i> แก้ไขข้อมูลการมาโรงเรียน (หัวข้อ 1.1.2)</h4>
                     <div class="form-grid">
                         <div class="form-group"><label>วันที่บันทึก</label><input id="swal-attendanceDate" type="date" class="form-control" value="${rowData.AttendanceDate}"></div>
-                        <div class="form-group"><label>ประเภท</label><select id="swal-attendanceType" class="form-control"><option value="การขาดเรียน">การขาดเรียน</option><option value="การมาสาย">การมาสาย</option></select></div>
+                        <div class="form-group"><label>ประเภท</label><select id="swal-attendanceType" class="form-control">${genSimpleOptions(['การขาดเรียน', 'การมาสาย'], rowData.AttendanceType, false)}</select></div>
                         <div class="form-group"><label>ครั้งที่ (สะสม)</label><select id="swal-attendanceOccurrence" class="form-control">${genOptions(1, 20, i => ({value: `ครั้งที่ ${i}`, text: `ครั้งที่ ${i}`}), rowData.AttendanceOccurrence)}</select></div>
                     </div>
                     <div id="swal-absence-options" class="${rowData.AttendanceType === 'การขาดเรียน' ? '' : 'hidden'}">
-                        <div class="form-group"><label for="swal-absenceCategory">หมวดหมู่การขาดเรียน</label><select id="swal-absenceCategory" class="form-control"><option value="">-- เลือกหมวดหมู่ --</option><option value="ขาดเรียนต่อเนื่อง(รอบ1เดือน)">ขาดเรียนต่อเนื่อง(รอบ1เดือน)</option><option value="ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)">ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)</option></select></div>
-                        <div id="swal-absence-continuous-options" class="form-group ${rowData.AbsenceCategory === 'ขาดเรียนต่อเนื่อง(รอบ1เดือน)' ? '' : 'hidden'}"><label for="swal-absenceDetailContinuous">รายละเอียดการขาดต่อเนื่อง</label><select id="swal-absenceDetailContinuous" class="form-control"><option value="">-- เลือก --</option>${genSimpleOptions(["ขาดติดต่อกัน เกิน 3 วัน", "ขาดติดต่อกันเกิน 5 วัน", "ขาดติดต่อกันเกิน 7 วัน", "ขาดติดต่อกันเกิน 9 วัน"], rowData.AbsenceDetailContinuous)}</select></div>
-                        <div id="swal-absence-noncontinuous-options" class="form-group ${rowData.AbsenceCategory === 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)' ? '' : 'hidden'}"><label for="swal-absenceDetailNonContinuous">รายละเอียดการขาดไม่ต่อเนื่อง</label><select id="swal-absenceDetailNonContinuous" class="form-control"><option value="">-- เลือก --</option>${genSimpleOptions(["ขาดเรียน 5 วันไม่ต่อเนื่อง", "ขาดเรียน 7 วันไม่ต่อเนื่อง", "ขาดเรียน 9 วันไม่ต่อเนื่อง"], rowData.AbsenceDetailNonContinuous)}</select></div>
+                        <div class="form-group"><label for="swal-absenceCategory">หมวดหมู่การขาดเรียน</label><select id="swal-absenceCategory" class="form-control">${genSimpleOptions(['ขาดเรียนต่อเนื่อง(รอบ1เดือน)','ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)'], rowData.AbsenceCategory)}</select></div>
+                        <div id="swal-absence-continuous-options" class="form-group ${rowData.AbsenceCategory === 'ขาดเรียนต่อเนื่อง(รอบ1เดือน)' ? '' : 'hidden'}"><label for="swal-absenceDetailContinuous">รายละเอียดการขาดต่อเนื่อง</label><select id="swal-absenceDetailContinuous" class="form-control">${genSimpleOptions(["ขาดติดต่อกัน เกิน 3 วัน", "ขาดติดต่อกันเกิน 5 วัน", "ขาดติดต่อกันเกิน 7 วัน", "ขาดติดต่อกันเกิน 9 วัน"], rowData.AbsenceDetailContinuous)}</select></div>
+                        <div id="swal-absence-noncontinuous-options" class="form-group ${rowData.AbsenceCategory === 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)' ? '' : 'hidden'}"><label for="swal-absenceDetailNonContinuous">รายละเอียดการขาดไม่ต่อเนื่อง</label><select id="swal-absenceDetailNonContinuous" class="form-control">${genSimpleOptions(["ขาดเรียน 5 วันไม่ต่อเนื่อง", "ขาดเรียน 7 วันไม่ต่อเนื่อง", "ขาดเรียน 9 วันไม่ต่อเนื่อง"], rowData.AbsenceDetailNonContinuous)}</select></div>
                     </div>
                     <div id="swal-late-options" class="form-group ${rowData.AttendanceType === 'การมาสาย' ? '' : 'hidden'}">
-                        <label for="swal-lateDetail">รายละเอียดการมาสาย</label><select id="swal-lateDetail" class="form-control"><option value="">-- เลือก --</option>${genSimpleOptions(["มาสาย 5 ครั้ง"], rowData.LateDetail)}</select>
+                        <label for="swal-lateDetail">รายละเอียดการมาสาย</label><select id="swal-lateDetail" class="form-control">${genSimpleOptions(["มาสาย 5 ครั้ง"], rowData.LateDetail)}</select>
                     </div>
                     <div class="form-group"><label>ผลการติดตาม</label><div id="swal-followUpActions" class="checkbox-grid"></div></div>
-                    <div class="form-group"><label for="swal-followUpStatus">สถานะการติดตาม</label><select id="swal-followUpStatus" class="form-control"><option value="ระหว่างดำเนินการ">ระหว่างดำเนินการ</option><option value="ดำเนินการเรียบร้อย">ดำเนินการเรียบร้อย</option></select></div>
+                    <div class="form-group"><label for="swal-followUpStatus">สถานะการติดตาม</label><select id="swal-followUpStatus" class="form-control">${genSimpleOptions(['ระหว่างดำเนินการ', 'ดำเนินการเรียบร้อย'], rowData.FollowUpStatus, false)}</select></div>
                     <div class="form-group"><label>หมายเหตุ</label><textarea id="swal-notes" class="form-control" rows="3">${rowData.Notes || ''}</textarea></div>
                 </div>`;
             
@@ -463,13 +471,6 @@
                 title: 'แก้ไขข้อมูลการมาโรงเรียน', html: modalHtml, width: '90%', showCancelButton: true,
                 confirmButtonText: '<i class="fas fa-save"></i> บันทึกการแก้ไข', cancelButtonText: 'ยกเลิก',
                 didOpen: () => {
-                    document.getElementById('swal-attendanceType').value = rowData.AttendanceType;
-                    document.getElementById('swal-absenceCategory').value = rowData.AbsenceCategory || "";
-                    document.getElementById('swal-absenceDetailContinuous').value = rowData.AbsenceDetailContinuous || "";
-                    document.getElementById('swal-absenceDetailNonContinuous').value = rowData.AbsenceDetailNonContinuous || "";
-                    document.getElementById('swal-lateDetail').value = rowData.LateDetail || "";
-                    document.getElementById('swal-followUpStatus').value = rowData.FollowUpStatus || "ระหว่างดำเนินการ";
-
                     const swalAttendanceTypeEl = document.getElementById('swal-attendanceType');
                     const swalAbsenceOptionsEl = document.getElementById('swal-absence-options');
                     const swalLateOptionsEl = document.getElementById('swal-late-options');
@@ -490,7 +491,7 @@
                     const currentFollowUps = Array.isArray(rowData.FollowUpActions) ? rowData.FollowUpActions : [];
                     followUpOptions.forEach(opt => {
                         const checked = currentFollowUps.includes(opt) ? 'checked' : '';
-                        const id = `swal-follow-${opt.replace(/[^a-zA-Z0-9]/g, "")}`;
+                        const id = `swal-follow-${opt.replace(/[^a-zA-Z0-9ก-๙]/g, "")}`;
                         swalFollowUpContainer.innerHTML += `<div class="checkbox-item"><input type="checkbox" id="${id}" name="swalFollowUp" value="${opt}" ${checked}><label for="${id}">${opt}</label></div>`;
                     });
                 },
@@ -523,7 +524,7 @@
                         Swal.fire('สำเร็จ!', result.message, 'success');
                         allData = []; 
                         fetchAllData().then(() => {
-                            if (document.getElementById('page-individual').classList.contains('active')) renderIndividualTable();
+                            if (document.getElementById('page-individual').classList.contains('active')) renderIndividualTable(); // Re-filter if needed
                             if (document.getElementById('page-summary').classList.contains('active')) applySummaryFilters();
                             if (document.getElementById('page-stats').classList.contains('active')) handleStatsFilterChange();
                         });
@@ -563,28 +564,44 @@
         function renderIndividualTable() {
             const searchType = document.getElementById('individual-search-type').value;
             const keyword = document.getElementById('individual-search-keyword').value.trim().toLowerCase();
+            const studentInfoDisplay = document.getElementById('individual-student-info-display');
+            const studentInfoContent = document.getElementById('student-info-content');
             
-            console.log("Searching Page 2:", { searchType, keyword, availableDataCount: allData.length });
+            console.log("Page 2: Searching for", { searchType, keyword });
 
-            if (!keyword && allData.length > 0) { 
+            if (!keyword) { 
                 Swal.fire('โปรดทราบ', 'กรุณาป้อนคำค้นหาสำหรับนักเรียน', 'info'); 
                 document.getElementById('individual-table').querySelector('tbody').innerHTML = `<tr><td colspan="8" style="text-align: center;">กรุณาป้อนคำค้นหา</td></tr>`; 
+                studentInfoDisplay.classList.add('hidden');
                 return; 
             }
             
-            const filteredData = allData.filter(row => {
+            const filteredStudentRecords = allData.filter(row => {
                 if(!row || typeof row !== 'object') return false;
-                const valueToSearch = row[searchType];
+                const valueToSearch = row[searchType]; // StudentID, FullName, Nickname
                 return (valueToSearch || "").toString().toLowerCase().includes(keyword);
             });
-            console.log("Page 2 Filtered Data:", filteredData);
+
+            console.log("Page 2: Filtered records for student(s):", filteredStudentRecords.length);
             
             const table = document.getElementById('individual-table'), thead = table.querySelector('thead'), tbody = table.querySelector('tbody');
-            thead.innerHTML = `<tr><th>วันที่</th><th>ประเภท</th><th>ครั้งที่</th><th>รายละเอียด</th><th>ผลการติดตาม</th><th>สถานะ</th><th>ไฟล์แนบ</th><th>จัดการ</th></tr>`;
-            tbody.innerHTML = '';
-            if (filteredData.length === 0) { tbody.innerHTML = `<tr><td colspan="8" style="text-align: center;">ไม่พบข้อมูล${keyword ? `ของ '${document.getElementById('individual-search-keyword').value}'` : ''}</td></tr>`; return; }
+            tbody.innerHTML = ''; // Clear previous results
 
-            filteredData.forEach(row => {
+            if (filteredStudentRecords.length === 0) { 
+                thead.innerHTML = ''; // Clear headers if no results
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align: center;">ไม่พบข้อมูลนักเรียน: '${document.getElementById('individual-search-keyword').value}'</td></tr>`; 
+                studentInfoDisplay.classList.add('hidden');
+                return; 
+            }
+
+            // Display student info (assuming first record has representative student info)
+            const student = filteredStudentRecords[0];
+            studentInfoContent.innerHTML = `<strong>${student.FullName} (${student.Nickname || '-'})</strong> - รหัส: ${student.StudentID} <br>ระดับชั้น: ${student.Level} ห้อง: ${student.Classroom} เลขที่: ${student.StudentNumber}`;
+            studentInfoDisplay.classList.remove('hidden');
+
+            thead.innerHTML = `<tr><th>วันที่</th><th>ประเภท</th><th>ครั้งที่</th><th>รายละเอียด</th><th>ผลการติดตาม</th><th>สถานะ</th><th>ไฟล์แนบ</th><th>จัดการ</th></tr>`;
+            
+            filteredStudentRecords.forEach(row => {
                 let detail = row.AbsenceDetailContinuous || row.AbsenceDetailNonContinuous || row.LateDetail || '-';
                 let followUps = Array.isArray(row.FollowUpActions) && row.FollowUpActions.length > 0 ? row.FollowUpActions.join(', ') : '-';
                 const tr = document.createElement('tr');
@@ -592,8 +609,8 @@
                     <td>${row.AttendanceDate}</td><td>${row.AttendanceType}</td><td>${row.AttendanceOccurrence}</td><td>${detail}</td><td>${followUps}</td>
                     <td>${row.FollowUpStatus || 'N/A'}</td>
                     <td>
-                        <button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(${JSON.stringify(row.ImagesJSON)}, "images")' ${!row.ImagesJSON || row.ImagesJSON.length === 0 ? 'disabled' : ''}><i class="fas fa-image"></i></button>
-                        <button class="btn btn-primary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(${JSON.stringify(row.DocumentsJSON)}, "docs")' ${!row.DocumentsJSON || row.DocumentsJSON.length === 0 ? 'disabled' : ''}><i class="fas fa-file-alt"></i></button>
+                        <button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(${JSON.stringify(row.ImageJSON)}, "images")' ${!row.ImageJSON ? 'disabled' : ''}><i class="fas fa-image"></i></button>
+                        <button class="btn btn-primary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(${JSON.stringify(row.DocumentJSON)}, "docs")' ${!row.DocumentJSON ? 'disabled' : ''}><i class="fas fa-file-alt"></i></button>
                     </td>
                     <td><button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick="editRecord(${row.RowID})"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" style="padding: 5px 8px;" onclick="deleteRecord(${row.RowID})"><i class="fas fa-trash"></i></button></td>`;
                 tbody.appendChild(tr);
@@ -603,13 +620,11 @@
         // --- Page 3: Summary Logic ---
         function setupSummaryPageFilters() {
             const filterTypeEl = document.getElementById('summary-filter-type');
-            const currentFilter = filterTypeEl.value; // Get current value before clearing
-            
-            if(filterTypeEl.options.length <= 1 ) { // Populate only if empty or default
+            const currentFilter = filterTypeEl.value;
+            if(filterTypeEl.options.length <= 1 ) {
                 filterTypeEl.innerHTML = `<option value="all">นักเรียนทั้งหมด</option><option value="classroom">ห้องเรียน</option><option value="date">วันที่บันทึก</option><option value="month">เดือน</option><option value="level">ระดับชั้น</option><option value="absence_continuous">การขาดเรียนต่อเนื่อง</option><option value="absence_noncontinuous">การขาดเรียนไม่ต่อเนื่อง</option><option value="late">การมาสาย</option>`;
             }
-            filterTypeEl.value = currentFilter || 'all'; // Restore previous or set default
-
+            filterTypeEl.value = currentFilter || 'all';
             const container = document.getElementById('summary-filter-input-container');
             let inputHtml = '';
             const selectedFilterType = filterTypeEl.value;
@@ -626,7 +641,7 @@
             const valueEl = document.getElementById('summary-filter-value');
             const value = valueEl ? valueEl.value : '';
             
-            console.log("Applying Summary Filters:", { type, value, availableDataCount: allData.length });
+            console.log("Page 3: Applying Summary Filters:", { type, value, availableDataCount: allData.length });
 
             const filtered = allData.filter(row => {
                  if (!row || typeof row !== 'object') return false;
@@ -642,23 +657,23 @@
                     default: return true;
                 }
             });
-            console.log("Page 3 Filtered Data:", filtered);
+            console.log("Page 3: Filtered Data:", filtered.length);
             renderSummaryTable(filtered);
         }
 
         function renderSummaryTable(data) {
             const table = document.getElementById('summary-table'), thead = table.querySelector('thead'), tbody = table.querySelector('tbody');
-            thead.innerHTML = `<tr><th>ระดับชั้น</th><th>ห้อง</th><th>ชื่อ-สกุล</th><th>ชื่อเล่น</th><th>วันที่</th><th>ประเภท</th><th>รายละเอียด</th><th>สถานะติดตาม</th><th>ไฟล์แนบ</th><th>จัดการ</th></tr>`;
+            thead.innerHTML = `<tr><th>ระดับชั้น</th><th>ห้อง</th><th>ชื่อ-สกุล</th><th>ชื่อเล่น</th><th>รหัสประจำตัว</th><th>วันที่</th><th>ประเภท</th><th>รายละเอียด</th><th>สถานะติดตาม</th><th>ไฟล์แนบ</th><th>จัดการ</th></tr>`;
             tbody.innerHTML = '';
-            if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="10" style="text-align: center;">ไม่พบข้อมูล</td></tr>`; return; }
+            if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="11" style="text-align: center;">ไม่พบข้อมูล</td></tr>`; return; }
             data.forEach(row => {
                 let detail = row.AbsenceDetailContinuous || row.AbsenceDetailNonContinuous || row.LateDetail || '-';
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${row.Level}</td><td>ห้อง ${row.Classroom}</td><td>${row.FullName}</td><td>${row.Nickname || '-'}</td><td>${row.AttendanceDate}</td><td>${row.AttendanceType}</td><td>${detail}</td>
+                tr.innerHTML = `<td>${row.Level}</td><td>ห้อง ${row.Classroom}</td><td>${row.FullName}</td><td>${row.Nickname || '-'}</td><td>${row.StudentID}</td><td>${row.AttendanceDate}</td><td>${row.AttendanceType}</td><td>${detail}</td>
                     <td>${row.FollowUpStatus || 'N/A'}</td>
                     <td>
-                        <button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(${JSON.stringify(row.ImagesJSON)}, "images")' ${!row.ImagesJSON || row.ImagesJSON.length === 0 ? 'disabled' : ''}><i class="fas fa-image"></i></button>
-                        <button class="btn btn-primary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(${JSON.stringify(row.DocumentsJSON)}, "docs")' ${!row.DocumentsJSON || row.DocumentsJSON.length === 0 ? 'disabled' : ''}><i class="fas fa-file-alt"></i></button>
+                        <button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(${JSON.stringify(row.ImageJSON)}, "images")' ${!row.ImageJSON ? 'disabled' : ''}><i class="fas fa-image"></i></button>
+                        <button class="btn btn-primary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(${JSON.stringify(row.DocumentJSON)}, "docs")' ${!row.DocumentJSON ? 'disabled' : ''}><i class="fas fa-file-alt"></i></button>
                     </td>
                     <td><button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick="editRecord(${row.RowID})"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" style="padding: 5px 8px;" onclick="deleteRecord(${row.RowID})"><i class="fas fa-trash"></i></button></td>`;
                 tbody.appendChild(tr);
@@ -671,8 +686,8 @@
             if (select.options.length > 1 && select.innerHTML.includes("สรุปข้อมูลทั้งหมด")) return; 
             select.innerHTML = ''; 
             const options = {
-                "all": "1. สรุปข้อมูลทั้งหมด", "level": "2. สรุปข้อมูลตามระดับชั้น", "month": "3. สรุปข้อมูลตามเดือน",
-                "date": "4. สรุปข้อมูลตามวันที่", "type": "5. สรุปตามประเภทการมาเรียน", "top10": "6. สรุปนักเรียน Top 10"
+                "all": "สรุปข้อมูลทั้งหมด", "level": "สรุปข้อมูลตามระดับชั้น", "month": "สรุปข้อมูลตามเดือน",
+                "top10": "สรุปนักเรียน Top 10" // Removed "date" and "type"
             };
             Object.entries(options).forEach(([value, text]) => { select.innerHTML += `<option value="${value}">${text}</option>`; });
             handleStatsFilterChange();
@@ -681,127 +696,125 @@
         function handleStatsFilterChange() {
             const filter = document.getElementById('stats-filter').value;
             const optionsContainer = document.getElementById('stats-filter-options-container');
-            optionsContainer.innerHTML = ''; // Clear previous options
+            optionsContainer.innerHTML = '';
             let html = '';
 
             if (filter === 'level') { html = `<div class="form-group"><label>เลือกระดับชั้น:</label><select id="stats-level-select" class="form-control"></select></div>`; }
             else if (filter === 'month') { html = `<div class="form-group"><label>เลือกเดือน:</label><input type="month" id="stats-month-input" class="form-control"></div>`; }
-            else if (filter === 'date') { html = `<div class="form-group"><label>เลือกวันที่:</label><input type="date" id="stats-date-input" class="form-control"></div>`; }
-            else if (filter === 'type') { html = `<div class="form-group"><label>เลือกประเภท:</label><select id="stats-type-select" class="form-control"><option value="การขาดเรียน">การขาดเรียน</option><option value="การมาสาย">การมาสาย</option><option value="absence_continuous">การขาดเรียนต่อเนื่อง</option><option value="absence_noncontinuous">การขาดเรียนไม่ต่อเนื่อง</option></select></div>`; }
             optionsContainer.innerHTML = html;
             
             if (filter === 'level') { const el = document.getElementById('stats-level-select'); for (let i=1; i<=6; i++) { el.innerHTML += `<option value="ม.${i}">ม.${i}</option>`; } el.addEventListener('change', renderAllCharts); }
-            else if (['month', 'date', 'type'].includes(filter)) { 
-                const inputEl = optionsContainer.querySelector('input, select');
-                if (inputEl) inputEl.addEventListener('change', renderAllCharts);
+            else if (filter === 'month') { 
+                const monthInput = document.getElementById('stats-month-input');
+                if (monthInput) monthInput.addEventListener('change', renderAllCharts);
             }
-            renderAllCharts(); // Render with default/current secondary filter
+            renderAllCharts();
         }
 
         function renderAllCharts() {
-            const filter = document.getElementById('stats-filter').value;
+            const filterType = document.getElementById('stats-filter').value;
             Object.values(charts).forEach(c => c.destroy()); charts = {};
             const wrapper = document.getElementById('charts-wrapper');
             wrapper.innerHTML = '';
             
-            console.log("Rendering charts for filter:", filter, "Available data:", allData.length);
+            console.log("Page 4: Rendering charts for filter:", filterType, "Available data:", allData.length);
 
-            let dataForCharts = [...allData]; // Start with all data, then filter
+            let dataForCharts = [...allData];
             let chartTitlePrefix = '';
 
-            if (filter === 'level') { 
+            if (filterType === 'level') { 
                 const val = document.getElementById('stats-level-select')?.value; 
                 if(val){ dataForCharts = allData.filter(r => r.Level === val); chartTitlePrefix = `(ระดับชั้น ${val}) `; }
                 else { wrapper.innerHTML = '<p class="text-center">กรุณาเลือกระดับชั้น</p>'; return;}
-            } else if (filter === 'month') { 
+            } else if (filterType === 'month') { 
                 const val = document.getElementById('stats-month-input')?.value; 
                 if (!val) { wrapper.innerHTML = '<p class="text-center">กรุณาเลือกเดือน</p>'; return; } 
                 dataForCharts = allData.filter(r => r.AttendanceDate && r.AttendanceDate.startsWith(val)); chartTitlePrefix = `(เดือน ${val}) `; 
-            } else if (filter === 'date') { 
-                const val = document.getElementById('stats-date-input')?.value; 
-                if (!val) { wrapper.innerHTML = '<p class="text-center">กรุณาเลือกวันที่</p>'; return; } 
-                dataForCharts = allData.filter(r => r.AttendanceDate === val); chartTitlePrefix = `(วันที่ ${val}) `; 
-            } else if (filter === 'type') { 
-                const val = document.getElementById('stats-type-select')?.value; 
-                chartTitlePrefix = `(ประเภท: ${val}) `;
-                if (val === 'การขาดเรียน') dataForCharts = allData.filter(r => r.AttendanceType === 'การขาดเรียน');
-                else if (val === 'การมาสาย') dataForCharts = allData.filter(r => r.AttendanceType === 'การมาสาย');
-                else if (val === 'absence_continuous') dataForCharts = allData.filter(r => r.AbsenceCategory === 'ขาดเรียนต่อเนื่อง(รอบ1เดือน)');
-                else if (val === 'absence_noncontinuous') dataForCharts = allData.filter(r => r.AbsenceCategory === 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)');
             }
             
-            console.log("Data for charts after filtering:", dataForCharts.length, "Filter type:", filter);
+            console.log("Page 4: Data for charts after filtering:", dataForCharts.length, "Filter type:", filterType);
 
-            if (dataForCharts.length === 0 && filter !== 'top10') {
+            if (dataForCharts.length === 0 && filterType !== 'top10') {
                  wrapper.innerHTML = '<p class="text-center" style="margin-top:20px;">ไม่พบข้อมูลสำหรับสร้างกราฟตามเงื่อนไข</p>'; return;
             }
 
-            if (filter === 'all' || filter === 'level') {
-                wrapper.innerHTML = `<div class="chart-grid"><div id="chart1-container"></div><div id="chart2-container"></div></div><div class="chart-grid" style="margin-top: 20px;"><div id="chart3-container"></div><div id="chart4-container"></div></div>`;
-                createChart(dataForCharts, 'doughnut', 'chart1-container', `${chartTitlePrefix}ภาพรวมประเภทการมาเรียน`, 'AttendanceType');
-                createChart(dataForCharts, 'bar', 'chart2-container', `${chartTitlePrefix}รายละเอียดการขาด/สาย`, (row) => row.AbsenceDetailContinuous || row.AbsenceDetailNonContinuous || row.LateDetail || "ไม่ระบุ");
-                createChart(dataForCharts, 'pie', 'chart3-container', `${chartTitlePrefix}สถานะการติดตาม`, 'FollowUpStatus');
-                createChart(dataForCharts, 'bar', 'chart4-container', `${chartTitlePrefix}การติดตามผล (Top 5)`, 'FollowUpActions');
-            } else if (filter === 'top10') {
+            if (filterType === 'all') {
+                wrapper.innerHTML = `<div class="chart-grid"><div id="chart1-container"></div><div id="chart2-container"></div></div>`;
+                createChart(dataForCharts, 'bar', 'chart1-container', `${chartTitlePrefix}ข้อมูลการมาเรียน แยกตามระดับชั้นและประเภท`, 'Level_AttendanceType');
+                createChart(dataForCharts, 'doughnut', 'chart2-container', `${chartTitlePrefix}ภาพรวมการติดตามผล`, 'FollowUpStatus');
+            } else if (filterType === 'level') {
+                wrapper.innerHTML = `<div class="chart-grid"><div id="chart1-container"></div><div id="chart2-container"></div></div>`;
+                createChart(dataForCharts, 'bar', 'chart1-container', `${chartTitlePrefix}ข้อมูลการมาเรียน แยกตามห้องและประเภท`, 'Classroom_AttendanceType');
+                createChart(dataForCharts, 'pie', 'chart2-container', `${chartTitlePrefix}รายละเอียดการขาด/สาย`, (row) => row.AbsenceDetailContinuous || row.AbsenceDetailNonContinuous || row.LateDetail || "ไม่ระบุ");
+            } else if (filterType === 'month') {
+                 wrapper.innerHTML = `<div class="chart-grid"><div id="chart1-container"></div><div id="chart2-container"></div></div>`;
+                 createChart(dataForCharts, 'bar', 'chart1-container', `${chartTitlePrefix}ข้อมูลการมาเรียน แยกตามระดับชั้นและประเภท`, 'Level_AttendanceType');
+                 createChart(dataForCharts, 'pie', 'chart2-container', `${chartTitlePrefix}รายละเอียดการขาด/สาย`, (row) => row.AbsenceDetailContinuous || row.AbsenceDetailNonContinuous || row.LateDetail || "ไม่ระบุ");
+            } else if (filterType === 'top10') {
                  wrapper.innerHTML = `<div id="chart1-container" style="max-height: 500px;"></div>`;
                  if (allData.length === 0) { wrapper.innerHTML = '<p class="text-center">ยังไม่มีข้อมูลนักเรียน</p>'; return; }
-                 createChart(allData, 'bar', 'chart1-container', `นักเรียนที่ถูกบันทึกข้อมูลสูงสุด 10 อันดับ`, 'FullName');
-            } else if (filter === 'month' || filter === 'date') {
-                 wrapper.innerHTML = `<div class="chart-grid"><div id="chart1-container"></div><div id="chart2-container"></div></div>`;
-                 createChart(dataForCharts, 'pie', 'chart1-container', `${chartTitlePrefix}ประเภทการมาเรียน`, 'AttendanceType');
-                 createChart(dataForCharts, 'bar', 'chart2-container', `${chartTitlePrefix}การติดตามผล (Top 5)`, 'FollowUpActions');
-            } else if (filter === 'type') {
-                 wrapper.innerHTML = `<div class="chart-grid"><div id="chart1-container"></div><div id="chart2-container"></div></div>`;
-                 let groupByDetail = 'LateDetail'; // Default for "การมาสาย"
-                 if (document.getElementById('stats-type-select').value === 'การขาดเรียน') groupByDetail = 'AbsenceCategory';
-                 else if (document.getElementById('stats-type-select').value === 'absence_continuous') groupByDetail = 'AbsenceDetailContinuous';
-                 else if (document.getElementById('stats-type-select').value === 'absence_noncontinuous') groupByDetail = 'AbsenceDetailNonContinuous';
-                 createChart(dataForCharts, 'pie', 'chart1-container', `${chartTitlePrefix}รายละเอียด`, groupByDetail);
-                 createChart(dataForCharts, 'bar', 'chart2-container', `${chartTitlePrefix}การติดตามผล (Top 5)`, 'FollowUpActions');
+                 createChart(allData, 'bar', 'chart1-container', `นักเรียนที่ถูกบันทึกข้อมูลสูงสุด 10 อันดับ`, 'FullName'); // Uses allData
             }
         }
         
         function createChart(data, type, containerId, title, groupByFnOrKey) {
             const container = document.getElementById(containerId);
-            if (!container) { console.error(`Container ${containerId} not found`); return; }
+            if (!container) { console.error(`Chart container ${containerId} not found`); return; }
             container.innerHTML = `<canvas id="${containerId}-canvas"></canvas>`;
             const ctx = document.getElementById(`${containerId}-canvas`).getContext('2d');
             
-            const counts = data.reduce((acc, row) => {
-                let keys = typeof groupByFnOrKey === 'function' ? groupByFnOrKey(row) : row[groupByFnOrKey];
-                if (!keys || keys.length === 0 || keys === "[]") { // Handle empty or "[]" string
-                    const defaultKey = (groupByFnOrKey === 'FollowUpActions') ? "ไม่ได้ระบุการติดตาม" : "ไม่ระบุ";
-                    if (groupByFnOrKey !== 'FullName') acc[defaultKey] = (acc[defaultKey] || 0) + 1;
+            let aggregatedData = {};
+            if (groupByFnOrKey === 'Level_AttendanceType') {
+                aggregatedData = data.reduce((acc, row) => {
+                    const key = `${row.Level} - ${row.AttendanceType}`;
+                    acc[key] = (acc[key] || 0) + 1;
                     return acc;
-                }
-                if (groupByFnOrKey === 'FollowUpActions' && Array.isArray(keys)) { 
-                    keys.forEach(key => { if(key) acc[key] = (acc[key] || 0) + 1; }); 
-                } else if (typeof keys === 'string' && keys) { 
-                    acc[keys] = (acc[keys] || 0) + 1; 
-                }
-                return acc;
-            }, {});
+                }, {});
+            } else if (groupByFnOrKey === 'Classroom_AttendanceType') {
+                aggregatedData = data.reduce((acc, row) => {
+                    const key = `ห้อง ${row.Classroom} - ${row.AttendanceType}`;
+                    acc[key] = (acc[key] || 0) + 1;
+                    return acc;
+                }, {});
+            } else {
+                aggregatedData = data.reduce((acc, row) => {
+                    let keys = typeof groupByFnOrKey === 'function' ? groupByFnOrKey(row) : row[groupByFnOrKey];
+                    if (!keys || keys.length === 0 || keys === "[]") {
+                        const defaultKey = (groupByFnOrKey === 'FollowUpActions') ? "ไม่ได้ระบุการติดตาม" : (groupByFnOrKey === 'FullName' ? "ไม่พบชื่อ": "ไม่ระบุ");
+                        if (groupByFnOrKey !== 'FullName') acc[defaultKey] = (acc[defaultKey] || 0) + 1;
+                        return acc;
+                    }
+                    if (groupByFnOrKey === 'FollowUpActions' && Array.isArray(keys)) { 
+                        keys.forEach(key => { if(key) acc[key] = (acc[key] || 0) + 1; }); 
+                    } else if (typeof keys === 'string' && keys) { 
+                        acc[keys] = (acc[keys] || 0) + 1; 
+                    }
+                    return acc;
+                }, {});
+            }
 
-            let entries = Object.entries(counts).filter(([key, value]) => key && key !== "" && key !== "ไม่ระบุ" && value > 0); // Filter out empty/null keys & zero counts
+            let entries = Object.entries(aggregatedData).filter(([key, value]) => key && key !== "" && key !== "ไม่ระบุ" && value > 0);
             if (groupByFnOrKey === 'FullName' || groupByFnOrKey === 'FollowUpActions') { 
                 entries = entries.sort(([,a],[,b]) => b-a).slice(0, (groupByFnOrKey === 'FullName' ? 10 : 5)); 
             }
 
             const labels = entries.map(e => e[0]);
-            const chartData = entries.map(e => e[1]);
+            const chartDataValues = entries.map(e => e[1]);
             
             if(labels.length === 0){
                 container.innerHTML = `<p style="text-align:center; padding-top: 20px;">ไม่พบข้อมูลสำหรับกราฟ '${title}'</p>`;
+                console.log(`No data for chart: ${title}`, {groupByFnOrKey, dataSample: data.slice(0,2)});
                 return;
             }
+            console.log(`Chart Data for '${title}':`, {labels, chartDataValues});
 
             charts[containerId] = new Chart(ctx, {
                 type: type,
                 data: {
                     labels: labels,
-                    datasets: [{ label: 'จำนวนครั้ง', data: chartData, backgroundColor: labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), borderWidth: 1, borderColor: type === 'doughnut' || type === 'pie' ? '#fff' : undefined }]
+                    datasets: [{ label: 'จำนวนครั้ง', data: chartDataValues, backgroundColor: labels.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]), borderWidth: 1, borderColor: type === 'doughnut' || type === 'pie' ? '#fff' : undefined }]
                 },
-                options: { responsive: true, maintainAspectRatio: type !== 'bar', plugins: { title: { display: true, text: title, font: { size: 16 } }, legend: { position: 'bottom', display: type !== 'bar' } } }
+                options: { responsive: true, maintainAspectRatio: type !== 'bar', plugins: { title: { display: true, text: title, font: { size: 16 } }, legend: { position: 'bottom', display: type !== 'bar' || groupByFnOrKey === 'FullName' ||  groupByFnOrKey === 'FollowUpActions' } } }
             });
         }
     </script>
