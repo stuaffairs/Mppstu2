@@ -87,7 +87,7 @@
 
     <div class="container">
         <nav>
-            <button class="nav-button active" onclick="showPage('page-form')"><i class="fas fa-edit"></i> บันทึกข้อมูล</button>
+            <button class="nav-button active" onclick="showPage('page-form')"><i class="fas fa-file-alt"></i> ดู/กรอกข้อมูล (ตัวอย่าง)</button>
             <button class="nav-button" onclick="showPage('page-individual')"><i class="fas fa-user-search"></i> ข้อมูลรายบุคคล</button>
             <button class="nav-button" onclick="showPage('page-summary')"><i class="fas fa-list-alt"></i> สรุปข้อมูลรวม</button>
             <button class="nav-button" onclick="showPage('page-stats')"><i class="fas fa-chart-bar"></i> สถิติ</button>
@@ -105,7 +105,11 @@
                         <div class="form-group"><label for="fullName">ชื่อ-สกุล</label><input type="text" id="fullName" class="form-control" required></div>
                         <div class="form-group"><label for="nickname">ชื่อเล่น</label><input type="text" id="nickname" class="form-control"></div>
                     </div>
+                    <div class="form-group" style="margin-top: 20px;">
+                        <label for="profilePicFile">รูปประจำตัวนักเรียน (1 รูป)</label>
+                        <input type="file" id="profilePicFile" name="profilePicFile" class="form-control" accept="image/*">
                     </div>
+                </div>
 
                 <div class="card">
                     <h3><i class="fas fa-calendar-check"></i> ข้อมูลการมาโรงเรียน</h3>
@@ -123,7 +127,15 @@
                     <div id="late-options" class="form-group hidden">
                         <label for="lateDetail">รายละเอียดการมาสาย</label><select id="lateDetail" class="form-control"><option value="">-- เลือก --</option><option value="มาสาย 5 ครั้ง">มาสาย 5 ครั้ง</option></select></div>
                     </div>
-
+                
+                    <div class="card">
+                       <h3><i class="fas fa-paperclip"></i> แนบไฟล์ประกอบการบันทึก</h3>
+                       <div class="form-grid">
+                             <div class="form-group"><label for="docFile">เอกสาร (1 ไฟล์)</label><input type="file" id="docFile" name="docFile" class="form-control" accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx"></div>
+                             <div class="form-group"><label for="imgFile">รูปภาพ (1 ไฟล์)</label><input type="file" id="imgFile" name="imgFile" class="form-control" accept="image/*"></div>
+                       </div>
+                    </div>
+                
                     <div class="form-group">
                         <label>ผลการติดตาม (เลือกได้หลายข้อ)</label>
                         <div id="followUpActions" class="checkbox-grid"></div>
@@ -136,11 +148,9 @@
                         </select>
                     </div>
                     <div class="form-group"><label for="notes">หมายเหตุ</label><textarea id="notes" class="form-control" rows="3" placeholder="รายละเอียด..."></textarea></div>
-                    <div id="recommendation-box" class="hidden"></div>
-                </div>
-                
-                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> บันทึกข้อมูล</button>
-            </form>
+                    <div id="recommendation-box" class="hidden"></div>  
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> บันทึกข้อมูล</button>
+              </form>
         </div>
 
         <div id="page-individual" class="page">
@@ -170,7 +180,7 @@
                         <tbody></tbody>
                     </table>
                 </div>
-                </div>
+            </div>
         </div>
 
         <div id="page-summary" class="page">
@@ -191,7 +201,7 @@
                          <tbody></tbody>
                     </table>
                 </div>
-                </div>
+            </div>
         </div>
 
         <div id="page-stats" class="page">
@@ -203,7 +213,7 @@
                 </div>
                 <div id="stats-filter-options-container" class="form-grid"></div>
                 <div id="charts-wrapper" style="margin-top: 20px;"></div>
-                </div>
+            </div>
         </div>
 
     </div>
@@ -286,15 +296,18 @@
                  else if (pageId === 'page-stats') { handleStatsFilterChange(); } 
                  else if (pageId === 'page-individual') {
                      const indTbody = document.getElementById('individual-table')?.querySelector('tbody');
-                     if(indTbody) indTbody.innerHTML = `<tr><td colspan="8" style="text-align: center;">กรุณาป้อนคำค้นหา</td></tr>`;
+                     if(indTbody) indTbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">กรุณาป้อนคำค้นหา</td></tr>`; // Colspan updated
                      const indInfoDisp = document.getElementById('individual-student-info-display');
                      if(indInfoDisp) indInfoDisp.classList.add('hidden');
                  }
             }));
             
             const attendanceFormEl = document.getElementById('attendanceForm');
-            if(attendanceFormEl && attendanceFormEl.querySelector('button[type="submit"]')) {
+            const submitButton = attendanceFormEl.querySelector('button[type="submit"]');
+            if(submitButton) { // Check if submit button exists
                  attendanceFormEl.addEventListener('submit', handleFormSubmit);
+            } else {
+                 console.warn("Submit button not found in attendanceForm. Form submission functionality is removed.");
             }
 
             document.getElementById('attendanceType')?.addEventListener('change', handleAttendanceTypeChange);
@@ -336,10 +349,10 @@
                         return fieldValue || defaultVal;
                     };
                     row.FollowUpActions = parseJsonField(row.FollowUpActions, []);
-                    // File fields are no longer expected to be JSON from backend as they were removed
-                    row.DocumentJSON = null; // Or remove these lines if columns are removed from sheet
-                    row.ImageJSON = null;
-                    row.ProfilePicJSON = null; 
+                    // Since file functionality is removed from GAS createRecord, these will be null or undefined from sheet for new records
+                    row.DocumentJSON = parseJsonField(row.DocumentJSON, null); 
+                    row.ImageJSON = parseJsonField(row.ImageJSON, null);
+                    row.ProfilePicJSON = parseJsonField(row.ProfilePicJSON, null); 
                     return row;
                 });
                 allData.sort((a,b) => new Date(b.AttendanceDate) - new Date(a.AttendanceDate));
@@ -351,7 +364,7 @@
         }
 
         // --- Page 1: Form Logic ---
-        function handleAttendanceTypeChange(e) { /* ... (same as before, ensure IDs exist) ... */ 
+        function handleAttendanceTypeChange(e) { 
             const type = e.target.value;
             document.getElementById('absence-options').classList.toggle('hidden', type !== 'การขาดเรียน');
             document.getElementById('late-options').classList.toggle('hidden', type !== 'การมาสาย');
@@ -359,7 +372,7 @@
             handleAbsenceCategoryChange({target: {value: ""}});
             updateRecommendations("");
         }
-        function handleAbsenceCategoryChange(e) { /* ... (same as before, ensure IDs exist) ... */ 
+        function handleAbsenceCategoryChange(e) { 
             const category = e.target.value;
             document.getElementById('absence-continuous-options').classList.toggle('hidden', category !== 'ขาดเรียนต่อเนื่อง(รอบ1เดือน)');
             document.getElementById('absence-noncontinuous-options').classList.toggle('hidden', category !== 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)');
@@ -367,7 +380,7 @@
             document.getElementById('absenceDetailNonContinuous').value = "";
             updateRecommendations("");
         }
-        function updateRecommendations(key) { /* ... (same as before, ensure ID exists) ... */ 
+        function updateRecommendations(key) { 
             const box = document.getElementById('recommendation-box');
             if (key && recommendations[key]) {
                 box.innerHTML = `<strong><i class="fas fa-info-circle"></i> คำแนะนำ:</strong> ${recommendations[key]}`;
@@ -377,16 +390,25 @@
             }
         }
 
-        async function handleFormSubmit(e) {
+        async function handleFormSubmit(e) { // This function might not be called if submit button is removed
             e.preventDefault();
             Swal.fire({ title: 'กำลังบันทึกข้อมูล...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
             const form = e.target;
+            const profilePicFile = form.profilePicFile.files[0]; 
+            const documentFile = form.docFile.files[0];
+            const imageFile = form.imgFile.files[0];   
+            
+            const profilePicData = await fileToBase64(profilePicFile); 
+            const documentData = await fileToBase64(documentFile);
+            const imageData = await fileToBase64(imageFile);
+
             const selectedFollowUps = Array.from(form.querySelectorAll('input[name="followUp"]:checked')).map(cb => cb.value);
 
             const params = new URLSearchParams({
                 action: 'create',
                 level: form.level.value, classroom: form.classroom.value, studentNumber: form.studentNumber.value,
                 studentId: form.studentId.value, fullName: form.fullName.value, nickname: form.nickname.value,
+                profilePicData: profilePicData ? JSON.stringify(profilePicData) : null, // ส่งรูปโปรไฟล์
                 attendanceDate: form.attendanceDate.value, attendanceType: form.attendanceType.value,
                 attendanceOccurrence: form.attendanceOccurrence.value,
                 absenceCategory: form.attendanceType.value === 'การขาดเรียน' ? form.absenceCategory.value : "",
@@ -395,8 +417,9 @@
                 lateDetail: form.attendanceType.value === 'การมาสาย' ? form.lateDetail.value : "",
                 followUpActions: JSON.stringify(selectedFollowUps),
                 followUpStatus: form.followUpStatus.value,
-                notes: form.notes.value
-                // No file data parameters sent
+                notes: form.notes.value,
+                documentData: documentData ? JSON.stringify(documentData) : null, // ส่งเอกสาร
+                imageData: imageData ? JSON.stringify(imageData) : null          // ส่งรูปภาพประกอบ
             });
 
             try {
@@ -414,14 +437,13 @@
                     });
                 } else { throw new Error(result.message || 'Error saving data'); }
             } catch (error) {
+                console.error("Submit Error:", error);
                 Swal.fire('ผิดพลาด!', 'เกิดข้อผิดพลาด: ' + error.message, 'error');
             }
         }
         
         // --- Generic Functions (Edit, Delete) ---
-        // showFilesModal is no longer needed as file display is removed from tables
-        
-        async function editRecord(rowId) { /* ... (same as before, but will not handle file fields) ... */
+        async function editRecord(rowId) { 
             const rowData = allData.find(r => r.RowID == rowId);
             if (!rowData) { Swal.fire('ผิดพลาด', 'ไม่พบข้อมูล', 'error'); return; }
 
@@ -527,7 +549,7 @@
 
             if (formValues) {
                 Swal.fire({ title: 'กำลังอัปเดต...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                const params = new URLSearchParams({ action: 'updateRecord', rowId, ...formValues }); // Changed to updateRecord
+                const params = new URLSearchParams({ action: 'updateRecord', rowId, ...formValues });
                 try {
                     const res = await fetch(SCRIPT_URL, { method: 'POST', body: params });
                     const result = await res.json();
@@ -545,7 +567,17 @@
             }
         }
 
-        function deleteRecord(rowId) { /* ... (same as before) ... */ 
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                if (!file) { resolve(null); return; }
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve({ base64: reader.result.split(',')[1], type: file.type, name: file.name });
+                reader.onerror = error => reject(error);
+            });
+        }
+        
+        function deleteRecord(rowId) { 
              Swal.fire({
                 title: 'คุณแน่ใจหรือไม่?', text: "ข้อมูลนี้จะถูกลบอย่างถาวร!", icon: 'warning',
                 showCancelButton: true, confirmButtonColor: '#d33', cancelButtonColor: '#3085d6',
@@ -580,56 +612,93 @@
             const keyword = document.getElementById('individual-search-keyword').value.trim().toLowerCase();
             const studentInfoDisplay = document.getElementById('individual-student-info-display');
             const studentInfoContent = document.getElementById('student-info-content');
-            const table = document.getElementById('individual-table'), thead = table.querySelector('thead'), tbody = table.querySelector('tbody');
-            
-            thead.innerHTML = `<tr><th>วันที่</th><th>ประเภท & รายละเอียด</th><th>ครั้งที่</th><th>ผลการติดตาม</th><th>สถานะติดตาม</th><th>หมายเหตุ</th><th>จัดการ</th></tr>`; // No file buttons
-            
-            if (!keyword && allData.length > 0) { 
-                Swal.fire('โปรดทราบ', 'กรุณาป้อนคำค้นหาสำหรับนักเรียน', 'info'); 
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">กรุณาป้อนคำค้นหา</td></tr>`; // Colspan updated
-                studentInfoDisplay.classList.add('hidden');
-                return; 
-            }
-            
-            const potentialMatches = allData.filter(row => {
-                if(!row || typeof row !== 'object') return false; 
-                const valueToSearch = row[searchType]; 
-                return (valueToSearch || "").toString().toLowerCase().includes(keyword);
-            });
-            
-            tbody.innerHTML = ''; 
+            const table = document.getElementById('individual-table');
+            const thead = table.querySelector('thead');
+            const tbody = table.querySelector('tbody');
+
+            console.log("DEBUG Page 2: Attempting search. Type:", searchType, "Keyword:", keyword, "Data available:", allData.length);
+
+            // Clear previous results
+            tbody.innerHTML = '';
             studentInfoDisplay.classList.add('hidden');
+            studentInfoContent.innerHTML = '';
+            thead.innerHTML = `<tr><th>วันที่</th><th>ประเภท & รายละเอียด</th><th>ครั้งที่</th><th>ผลการติดตาม</th><th>สถานะติดตาม</th><th>หมายเหตุ</th><th>จัดการ</th></tr>`;
 
-            if (potentialMatches.length === 0) { 
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">ไม่พบข้อมูลนักเรียน: '${document.getElementById('individual-search-keyword').value}'</td></tr>`; // Colspan updated
-                return; 
-            }
 
-            let studentToDisplay;
-            if (searchType === "FullName" || searchType === "Nickname") {
-                const uniqueStudentIDs = [...new Set(potentialMatches.map(r => r.StudentID))];
-                if (uniqueStudentIDs.length > 1) {
-                    Swal.fire('ข้อมูลซ้ำซ้อน', `พบนักเรียน ${uniqueStudentIDs.length} คนที่มี ${searchType === "FullName" ? "ชื่อ-สกุล" : "ชื่อเล่น"} ใกล้เคียงกัน กรุณาค้นหาด้วย "รหัสประจำตัวนักเรียน" เพื่อระบุให้ชัดเจน`, 'warning');
-                    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">พบข้อมูลซ้ำซ้อน กรุณาค้นหาด้วยรหัสประจำตัว</td></tr>`; // Colspan updated
-                    return;
-                }
-                studentToDisplay = potentialMatches.find(r => r.StudentID === uniqueStudentIDs[0]);
-            } else { // Searching by StudentID, expect unique or first match
-                studentToDisplay = potentialMatches[0];
-            }
-
-            if (!studentToDisplay) { // Should not happen if potentialMatches > 0
-                 tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">ไม่สามารถระบุข้อมูลนักเรียนได้</td></tr>`; // Colspan updated
+            if (!keyword) {
+                Swal.fire('โปรดทราบ', 'กรุณาป้อนคำค้นหาสำหรับนักเรียน', 'info');
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">กรุณาป้อนคำค้นหา</td></tr>`;
                 return;
             }
+
+            if (!allData || allData.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">ไม่พบข้อมูลนักเรียนในระบบ</td></tr>`;
+                return;
+            }
+            console.log("DEBUG Page 2: Sample of allData[0] before filtering:", allData.length > 0 ? allData[0] : "allData is empty");
+
+
+            const potentialMatches = allData.filter(row => {
+                if (!row || typeof row !== 'object') return false;
+                const valueToSearch = row[searchType]; // searchType will be 'FullName', 'Nickname', or 'StudentID'
+                return (valueToSearch || "").toString().toLowerCase().includes(keyword);
+            });
+
+            console.log("DEBUG Page 2: Potential matches found:", potentialMatches.length);
+
+            if (potentialMatches.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">ไม่พบข้อมูลนักเรียนที่ตรงกับคำค้นหา: '${keyword}'</td></tr>`;
+                return;
+            }
+
+            let targetStudentID = null;
+            let studentForInfoDisplay = null;
+
+            if (searchType === "FullName" || searchType === "Nickname") {
+                const uniqueStudentIDs = [...new Set(potentialMatches.map(r => r.StudentID))];
+                console.log("DEBUG Page 2: Unique StudentIDs found for Name/Nickname search:", uniqueStudentIDs);
+                if (uniqueStudentIDs.length > 1) {
+                    Swal.fire('ข้อมูลซ้ำซ้อน', `พบนักเรียน ${uniqueStudentIDs.length} คนที่มี ${searchType === "FullName" ? "ชื่อ-สกุล" : "ชื่อเล่น"} ตรงกับคำค้นหา กรุณาค้นหาด้วย "รหัสประจำตัวนักเรียน" เพื่อระบุให้ชัดเจนยิ่งขึ้น`, 'warning');
+                    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">พบข้อมูลซ้ำซ้อน กรุณาค้นหาด้วยรหัสประจำตัว</td></tr>`;
+                    return;
+                }
+                if (uniqueStudentIDs.length === 1) {
+                    targetStudentID = uniqueStudentIDs[0];
+                }
+            } else { // Searching by StudentID
+                targetStudentID = potentialMatches[0].StudentID; // Assume StudentID is unique enough from this direct search
+            }
+
+            if (!targetStudentID) {
+                 tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">ไม่สามารถระบุข้อมูลนักเรียนที่ต้องการได้ กรุณาตรวจสอบคำค้นหา</td></tr>`;
+                 return;
+            }
+
+            // Get all attendance records for the uniquely identified student
+            const studentAttendanceRecords = allData.filter(row => row.StudentID === targetStudentID);
+
+            if (studentAttendanceRecords.length === 0) {
+                 tbody.innerHTML = `<tr><td colspan="7" style="text-align: center;">ไม่พบรายการบันทึกการมาเรียนสำหรับนักเรียนที่ระบุ</td></tr>`;
+                 return;
+            }
             
-            // Display student info section
-            studentInfoContent.innerHTML = `<div><strong>${studentToDisplay.FullName} (${studentToDisplay.Nickname || '-'})</strong> - รหัส: ${studentToDisplay.StudentID} <br>ระดับชั้น: ${studentToDisplay.Level} ห้อง: ${studentToDisplay.Classroom} เลขที่: ${studentToDisplay.StudentNumber}</div><div class="clear-float"></div>`;
+            studentForInfoDisplay = studentAttendanceRecords[0]; // Use the first record for consistent student master data
+
+            // Display Student Information (Part 1)
+            let profilePicHtml = '<div style="width:100px; height:100px; background-color:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; float:left; margin-right:15px;"><i class="fas fa-user fa-3x" style="color:#aaa;"></i></div>';
+            if (studentForInfoDisplay.ProfilePicJSON && studentForInfoDisplay.ProfilePicJSON.url) {
+                profilePicHtml = `<img src="${studentForInfoDisplay.ProfilePicJSON.url}" alt="รูปนักเรียน">`;
+            }
+            studentInfoContent.innerHTML = `
+                ${profilePicHtml}
+                <div>
+                    <strong>${studentForInfoDisplay.FullName} (${studentForInfoDisplay.Nickname || '-'})</strong> - รหัส: ${studentForInfoDisplay.StudentID}<br>
+                    ระดับชั้น: ${studentForInfoDisplay.Level} ห้อง: ${studentForInfoDisplay.Classroom} เลขที่: ${studentForInfoDisplay.StudentNumber}
+                </div>
+                <div class="clear-float"></div>`;
             studentInfoDisplay.classList.remove('hidden');
 
-            // Filter allData again for ALL records of this specific student
-            const studentAttendanceRecords = allData.filter(row => row.StudentID === studentToDisplay.StudentID);
-            
+            // Display Attendance Records (Part 2)
             studentAttendanceRecords.forEach(row => {
                 let typeAndDetail = `${row.AttendanceType}`;
                 if (row.AbsenceDetailContinuous) typeAndDetail += ` (${row.AbsenceDetailContinuous})`;
@@ -645,7 +714,10 @@
                     <td>${followUps}</td>
                     <td>${row.FollowUpStatus || 'N/A'}</td>
                     <td>${row.Notes || '-'}</td>
-                    <td><button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick="editRecord(${row.RowID})"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" style="padding: 5px 8px;" onclick="deleteRecord(${row.RowID})"><i class="fas fa-trash"></i></button></td>`;
+                    <td>
+                        <button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick="editRecord(${row.RowID})"><i class="fas fa-edit"></i></button> 
+                        <button class="btn btn-danger btn-sm" style="padding: 5px 8px;" onclick="deleteRecord(${row.RowID})"><i class="fas fa-trash"></i></button>
+                    </td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -693,9 +765,9 @@
 
         function renderSummaryTable(data) {
             const table = document.getElementById('summary-table'), thead = table.querySelector('thead'), tbody = table.querySelector('tbody');
-            thead.innerHTML = `<tr><th>ระดับชั้น</th><th>ห้อง</th><th>ชื่อ-สกุล</th><th>ชื่อเล่น</th><th>รหัสประจำตัว</th><th>วันที่</th><th>ประเภท</th><th>รายละเอียด</th><th>ครั้งที่</th><th>สถานะติดตาม</th><th>จัดการ</th></tr>`; // Removed file columns
+            thead.innerHTML = `<tr><th>ระดับชั้น</th><th>ห้อง</th><th>ชื่อ-สกุล</th><th>ชื่อเล่น</th><th>รหัสประจำตัว</th><th>วันที่</th><th>ประเภท</th><th>รายละเอียด</th><th>ครั้งที่</th><th>สถานะติดตาม</th><th>จัดการ</th></tr>`;
             tbody.innerHTML = '';
-            if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="11" style="text-align: center;">ไม่พบข้อมูล</td></tr>`; return; } // Adjusted colspan
+            if (data.length === 0) { tbody.innerHTML = `<tr><td colspan="11" style="text-align: center;">ไม่พบข้อมูล</td></tr>`; return; }
             data.forEach(row => {
                 let detail = row.AbsenceDetailContinuous || row.AbsenceDetailNonContinuous || row.LateDetail || '-';
                 const tr = document.createElement('tr');
