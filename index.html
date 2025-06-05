@@ -699,7 +699,7 @@
                     row.FollowUpActions = parseJsonField(row.FollowUpActions, [], "FollowUpActions");
                     row.DocumentJSON = parseJsonField(row.DocumentJSON, null, "DocumentJSON");
                     row.ImageJSON = parseJsonField(row.ImageJSON, null, "ImageJSON");
-                    row.ProfilePicJSON = parseJsonField(row.ProfilePicURL, null, "ProfilePicURL"); // Pass fieldName for specific logging
+                    row.ProfilePicURL = parseJsonField(row.ProfilePicURL, null, "ProfilePicURL"); // Pass fieldName for specific logging
                     return row;
                 });
 
