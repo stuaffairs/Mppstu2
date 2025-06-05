@@ -665,22 +665,22 @@
                 }
 
                 allData = jsonData.map(row => {
-                    // Helper function to parse JSON fields, now with logging for ProfilePicJSON
+                    // Helper function to parse JSON fields, now with logging for ProfilePicURL
                     const parseJsonField = (fieldValue, defaultVal = null, fieldName = "UnknownField") => {
-                        // ***** START: DEBUG Log for ProfilePicJSON parsing *****
-                        if (fieldName === "ProfilePicJSON") {
+                        // ***** START: DEBUG Log for ProfilePicURL parsing *****
+                        if (fieldName === "ProfilePicURL") {
                             console.log(`DEBUG fetchAllData - RowID: ${row.RowID}, Raw ${fieldName} from sheet:`, fieldValue, "(Type:", typeof fieldValue + ")");
                         }
-                        // ***** END: DEBUG Log for ProfilePicJSON parsing *****
+                        // ***** END: DEBUG Log for ProfilePicURL parsing *****
 
                         if (fieldValue && typeof fieldValue === 'string') {
                             try { 
                                 const parsed = JSON.parse(fieldValue);
-                                // ***** START: DEBUG Log successful parsing for ProfilePicJSON *****
-                                if (fieldName === "ProfilePicJSON") {
+                                // ***** START: DEBUG Log successful parsing for ProfilePicURL *****
+                                if (fieldName === "ProfilePicURL") {
                                     console.log(`DEBUG fetchAllData - RowID: ${row.RowID}, Successfully parsed ${fieldName}:`, parsed);
                                 }
-                                // ***** END: DEBUG Log successful parsing for ProfilePicJSON *****
+                                // ***** END: DEBUG Log successful parsing for ProfilePicURL *****
                                 return parsed; 
                             } 
                             catch (e) { 
@@ -688,30 +688,30 @@
                                 return defaultVal; 
                             }
                         }
-                        // ***** START: DEBUG Log if not string or empty for ProfilePicJSON *****
-                        if (fieldName === "ProfilePicJSON" && (!fieldValue || typeof fieldValue !== 'string')) {
+                        // ***** START: DEBUG Log if not string or empty for ProfilePicURL *****
+                        if (fieldName === "ProfilePicURL" && (!fieldValue || typeof fieldValue !== 'string')) {
                              console.log(`DEBUG fetchAllData - RowID: ${row.RowID}, ${fieldName} is NOT a string or IS empty/null. Value:`, fieldValue);
                         }
-                        // ***** END: DEBUG Log if not string or empty for ProfilePicJSON *****
+                        // ***** END: DEBUG Log if not string or empty for ProfilePicURL *****
                         return fieldValue || defaultVal; // If already an object (from previous parse) or null/undefined
                     };
 
                     row.FollowUpActions = parseJsonField(row.FollowUpActions, [], "FollowUpActions");
                     row.DocumentJSON = parseJsonField(row.DocumentJSON, null, "DocumentJSON");
                     row.ImageJSON = parseJsonField(row.ImageJSON, null, "ImageJSON");
-                    row.ProfilePicJSON = parseJsonField(row.ProfilePicJSON, null, "ProfilePicJSON"); // Pass fieldName for specific logging
+                    row.ProfilePicJSON = parseJsonField(row.ProfilePicURL, null, "ProfilePicURL"); // Pass fieldName for specific logging
                     return row;
                 });
 
                 allData.sort((a,b) => new Date(b.AttendanceDate) - new Date(a.AttendanceDate));
                 console.log("DEBUG fetchAllData - Processed allData count:", allData.length);
                 if (allData.length > 0) {
-                    // Log a sample of the processed ProfilePicJSON for the first record that has one
-                    const sampleWithPic = allData.find(r => r.ProfilePicJSON && r.ProfilePicJSON.url);
+                    // Log a sample of the processed ProfilePicURL for the first record that has one
+                    const sampleWithPic = allData.find(r => r.ProfilePicURL && r.ProfilePicURL.url);
                     if (sampleWithPic) {
-                        console.log("DEBUG fetchAllData - Sample processed ProfilePicJSON:", sampleWithPic.ProfilePicJSON);
+                        console.log("DEBUG fetchAllData - Sample processed ProfilePicURL:", sampleWithPic.ProfilePicURL);
                     } else {
-                        console.log("DEBUG fetchAllData - No processed ProfilePicJSON found in sample.");
+                        console.log("DEBUG fetchAllData - No processed ProfilePicURL found in sample.");
                     }
                 }
                 Swal.close();
@@ -1048,17 +1048,17 @@
             const studentMasterInfo = studentAttendanceRecords[0]; // Use the first record for consistent student master data
             // ***** เพิ่มบรรทัด console.log ตรงนี้ครับ *****
             console.log("DEBUG Page 2 - studentMasterInfo Object:", studentMasterInfo); 
-            console.log("DEBUG Page 2 - studentMasterInfo.ProfilePicJSON:", studentMasterInfo.ProfilePicJSON);
-            if (studentMasterInfo.ProfilePicJSON) {
-                console.log("DEBUG Page 2 - studentMasterInfo.ProfilePicJSON.url:", studentMasterInfo.ProfilePicJSON.url);
+            console.log("DEBUG Page 2 - studentMasterInfo.ProfilePicURL:", studentMasterInfo.ProfilePicURL);
+            if (studentMasterInfo.ProfilePicURL) {
+                console.log("DEBUG Page 2 - studentMasterInfo.ProfilePicURL.url:", studentMasterInfo.ProfilePicURL.url);
             } else {
-                console.log("DEBUG Page 2 - studentMasterInfo.ProfilePicJSON is null or undefined");
+                console.log("DEBUG Page 2 - studentMasterInfo.ProfilePicURL is null or undefined");
             }
             
             // Display Student Information (Part 1)
             let profilePicHtml = '<div style="width:100px; height:100px; background-color:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; float:left; margin-right:15px;"><i class="fas fa-user fa-3x" style="color:#aaa;"></i></div>';
-            if (studentMasterInfo.ProfilePicJSON && studentMasterInfo.ProfilePicJSON.url) {
-                profilePicHtml = `<img src="${studentMasterInfo.ProfilePicJSON.url}" alt="รูปนักเรียน ${studentMasterInfo.FullName}">`;
+            if (studentMasterInfo.ProfilePicURL && studentMasterInfo.ProfilePicURL.url) {
+                profilePicHtml = `<img src="${studentMasterInfo.ProfilePicURL.url}" alt="รูปนักเรียน ${studentMasterInfo.FullName}">`;
             }
             studentInfoContent.innerHTML = `
                 ${profilePicHtml}
