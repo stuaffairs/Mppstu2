@@ -635,10 +635,16 @@
             document.getElementById('stats-filter')?.addEventListener('change', handleStatsFilterChange);
         }
 
+        // ***** นี่คือฟังก์ชัน showPage ที่สำคัญ *****
         function showPage(pageId) {
+            // console.log("Showing page:", pageId); // สามารถเปิดบรรทัดนี้เพื่อทดสอบใน Console ได้
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             const newPage = document.getElementById(pageId);
-            if (newPage) newPage.classList.add('active');
+            if (newPage) {
+                newPage.classList.add('active');
+            } else {
+                console.error("Page not found:", pageId); 
+            }
         }
 
         async function fetchAllData() {
