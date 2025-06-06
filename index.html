@@ -817,7 +817,7 @@
                             <div class="form-group"><label>ระดับชั้น</label><select id="swal-level" class="form-control">${genSimpleOptions(['ม.1','ม.2','ม.3','ม.4','ม.5','ม.6'], rowData.Level, false)}</select></div>
                             <div class="form-group"><label>ห้อง</label><select id="swal-classroom" class="form-control">${genOptions(1, 18, i => ({value: i, text: `ห้อง ${i}`}), rowData.Classroom)}</select></div>
                             <div class="form-group"><label>เลขที่</label><select id="swal-studentNumber" class="form-control">${genOptions(1, 50, i => ({value: i, text: i}), rowData.StudentNumber)}</select></div>
-                            <div class="form-group"><label>รหัสประจำตัวนักเรียน</label><input id="swal-studentId" class="form-control" value="${rowData.StudentID}"></div>
+                            <div class="form-group"><label>รหัสนักเรียน</label><input id="swal-studentId" class="form-control" value="${rowData.StudentID}"></div>
                             <div class="form-group"><label>ชื่อ-สกุล</label><input id="swal-fullName" class="form-control" value="${rowData.FullName}"></div>
                             <div class="form-group"><label>ชื่อเล่น</label><input id="swal-nickname" class="form-control" value="${rowData.Nickname || ''}"></div>
                         </div>
@@ -901,7 +901,8 @@
                         lateDetail: document.getElementById('swal-attendanceType').value === 'การมาสาย' ? document.getElementById('swal-lateDetail').value : "",
                         followUpActions: JSON.stringify(selectedFollowUps), 
                         followUpStatus: document.getElementById('swal-followUpStatus').value,
-                        notes: document.getElementById('swal-notes').value // ***** นี่คือจุดที่แก้ไขจาก swล-notes เป็น swal-notes *****
+                        // ***** นี่คือจุดที่แก้ไขการพิมพ์ผิด *****
+                        notes: document.getElementById('swal-notes').value 
                     }
                 }
             });
