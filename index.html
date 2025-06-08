@@ -808,7 +808,7 @@
 
             const genOptions = (start, end, formatFn, selectedVal) => Array.from({length: end-start+1}, (_, i) => i+start).map(val => `<option value="${formatFn(val).value}" ${formatFn(val).value == selectedVal ? 'selected':''}>${formatFn(val).text}</option>`).join('');
             const genSimpleOptions = (arr, selectedVal, addEmpty = true) => (addEmpty ? '<option value="">-- เลือก --</option>' : '') + arr.map(val => `<option value="${val}" ${val == selectedVal ? 'selected':''}>${val}</option>`).join('');
-            
+
             const modalHtml = `
                 <div style="text-align:left;">
                     <div class="card" style="box-shadow: none; padding:0; margin-bottom:15px;">
@@ -840,13 +840,13 @@
                     <div class="form-group"><label for="swal-followUpStatus">สถานะการติดตาม</label><select id="swal-followUpStatus" class="form-control">${genSimpleOptions(['ระหว่างดำเนินการ', 'ดำเนินการเรียบร้อย'], rowData.FollowUpStatus, false)}</select></div>
                     <div class="form-group"><label>หมายเหตุ</label><textarea id="swal-notes" class="form-control" rows="3">${rowData.Notes || ''}</textarea></div>
                 </div>`;
-            
+
             const { value: formValues } = await Swal.fire({
                 title: 'แก้ไขข้อมูล', html: modalHtml, width: '90%', showCancelButton: true,
                 confirmButtonText: '<i class="fas fa-save"></i> บันทึกการแก้ไข', cancelButtonText: 'ยกเลิก',
                 didOpen: () => {
                     const swalAttendanceTypeEl = document.getElementById('swal-attendanceType');
-                    swalAttendanceTypeEl.value = rowData.AttendanceType; 
+                    swalAttendanceTypeEl.value = rowData.AttendanceType;
                     const swalAbsenceOptionsEl = document.getElementById('swal-absence-options');
                     const swalLateOptionsEl = document.getElementById('swal-late-options');
                     swalAbsenceOptionsEl.classList.toggle('hidden', rowData.AttendanceType !== 'การขาดเรียน');
@@ -868,14 +868,14 @@
                         swalAbsenceContinuousEl.classList.toggle('hidden', e.target.value !== 'ขาดเรียนต่อเนื่อง(รอบ1เดือน)');
                         swalAbsenceNonContinuousEl.classList.toggle('hidden', e.target.value !== 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)');
                     });
-                    
+
                     document.getElementById('swal-absenceDetailContinuous').value = rowData.AbsenceDetailContinuous || "";
                     document.getElementById('swal-absenceDetailNonContinuous').value = rowData.AbsenceDetailNonContinuous || "";
                     document.getElementById('swal-lateDetail').value = rowData.LateDetail || "";
                     document.getElementById('swal-followUpStatus').value = rowData.FollowUpStatus || "ระหว่างดำเนินการ";
-                    
+
                     const swalFollowUpContainer = document.getElementById('swal-followUpActions');
-                    swalFollowUpContainer.innerHTML = ''; 
+                    swalFollowUpContainer.innerHTML = '';
                     const currentFollowUps = Array.isArray(rowData.FollowUpActions) ? rowData.FollowUpActions : [];
                     followUpOptions.forEach(opt => {
                         const checked = currentFollowUps.includes(opt) ? 'checked' : '';
@@ -886,22 +886,22 @@
                 preConfirm: () => {
                     const selectedFollowUps = Array.from(document.querySelectorAll('input[name="swalFollowUp"]:checked')).map(cb => cb.value);
                     return {
-                        level: document.getElementById('swal-level').value, 
-                        classroom: document.getElementById('swal-classroom').value, 
+                        level: document.getElementById('swal-level').value,
+                        classroom: document.getElementById('swal-classroom').value,
                         studentNumber: document.getElementById('swal-studentNumber').value,
-                        studentId: document.getElementById('swal-studentId').value, 
-                        fullName: document.getElementById('swal-fullName').value, 
+                        studentId: document.getElementById('swal-studentId').value,
+                        fullName: document.getElementById('swal-fullName').value,
                         nickname: document.getElementById('swal-nickname').value,
-                        attendanceDate: document.getElementById('swal-attendanceDate').value, 
+                        attendanceDate: document.getElementById('swal-attendanceDate').value,
                         attendanceType: document.getElementById('swal-attendanceType').value,
                         attendanceOccurrence: document.getElementById('swal-attendanceOccurrence').value,
                         absenceCategory: document.getElementById('swal-attendanceType').value === 'การขาดเรียน' ? document.getElementById('swal-absenceCategory').value : "",
                         absenceDetailContinuous: (document.getElementById('swal-attendanceType').value === 'การขาดเรียน' && document.getElementById('swal-absenceCategory').value === 'ขาดเรียนต่อเนื่อง(รอบ1เดือน)') ? document.getElementById('swal-absenceDetailContinuous').value : "",
                         absenceDetailNonContinuous: (document.getElementById('swal-attendanceType').value === 'การขาดเรียน' && document.getElementById('swal-absenceCategory').value === 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)') ? document.getElementById('swal-absenceDetailNonContinuous').value : "",
                         lateDetail: document.getElementById('swal-attendanceType').value === 'การมาสาย' ? document.getElementById('swal-lateDetail').value : "",
-                        followUpActions: JSON.stringify(selectedFollowUps), 
+                        followUpActions: JSON.stringify(selectedFollowUps),
                         followUpStatus: document.getElementById('swal-followUpStatus').value,
-                        notes: document.getElementById('swal-notes').value // <<<<----- แก้ไขจาก swล-notes เป็น swal-notes แล้ว
+                        notes: document.getElementById('swal-notes').value
                     }
                 }
             });
@@ -914,10 +914,10 @@
                     const result = await res.json();
                     if (result.status === 'success') {
                         Swal.fire('สำเร็จ!', result.message, 'success');
-                        allData = []; 
+                        allData = [];
                         fetchAllData().then(() => {
                             const activePageId = document.querySelector('.page.active')?.id;
-                            if (activePageId === 'page-individual') renderIndividualTable(); 
+                            if (activePageId === 'page-individual') renderIndividualTable();
                             else if (activePageId === 'page-summary') applySummaryFilters();
                             if (activePageId === 'page-stats') handleStatsFilterChange();
                         });
