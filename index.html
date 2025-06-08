@@ -68,6 +68,10 @@
             flex-wrap: wrap;
         }
 
+        <div style="text-align: center; margin: 15px;">
+            <button id="test-deploy-btn" class="btn btn-danger">Test Deployment (กดปุ่มนี้เพื่อทดสอบ)</button>
+        </div>
+
         .nav-button {
             background-color: transparent;
             color: var(--primary-color);
@@ -565,6 +569,7 @@
             }).catch(error => {
                 Swal.fire('เกิดข้อผิดพลาดในการเริ่มต้น', 'ไม่สามารถโหลดข้อมูลเริ่มต้นได้: ' + error.message, 'error');
             });
+            
         });
 
         function populateStaticDropdowns() {
@@ -633,7 +638,27 @@
             document.getElementById('summary-filter-btn')?.addEventListener('click', applySummaryFilters);
             document.getElementById('summary-filter-type')?.addEventListener('change', setupSummaryPageFilters);
             document.getElementById('stats-filter')?.addEventListener('change', handleStatsFilterChange);
+           
+            // ***** เพิ่มบรรทัดนี้เข้าไปท้ายสุดของฟังก์ชัน *****
+            document.getElementById('test-deploy-btn')?.addEventListener('click', testDeployment);
         }
+    async function testDeployment() {
+        Swal.fire({ title: 'กำลังทดสอบ Deployment...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+        const params = new URLSearchParams({ action: 'test_version' });
+        try {
+            const res = await fetch(SCRIPT_URL, { method: 'POST', body: params });
+            const result = await res.json();
+            if (result.status === 'success') {
+                Swal.fire('Deployment OK!', `เซิร์ฟเวอร์ตอบกลับแล้ว<br>Timestamp: ${result.timestamp}`, 'success');
+            } else {
+                // This will trigger if it gets the 'Invalid POST action specified' error
+                Swal.fire('Deployment มีปัญหา!', `เซิร์ฟเวอร์ตอบกลับด้วยข้อผิดพลาด: <br><b>${result.message}</b><br><br>แสดงว่าสคริปต์ที่ Deploy อยู่ยังเป็นเวอร์ชันเก่า`, 'error');
+            }
+        } catch (error) {
+            Swal.fire('Fetch Error!', 'ไม่สามารถเชื่อมต่อกับสคริปต์ได้: ' + error.message, 'error');
+        }
+    }
+        
 
         // ***** นี่คือฟังก์ชัน showPage ที่สำคัญ *****
         function showPage(pageId) {
