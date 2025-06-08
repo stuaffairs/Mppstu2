@@ -884,48 +884,54 @@
                     });
                 },
                 preConfirm: () => {
-                    console.log("===== DEBUGGING PRECONFIRM =====");
+                    // ---- ขั้นตอนที่ 1: อ่านค่าจากฟิลด์หลักๆ มาเก็บในตัวแปรอย่างปลอดภัย ----
                 
-                    // เราจะ log element ทุกตัวก่อนที่จะพยายามอ่านค่า .value
-                    console.log("swal-level:", document.getElementById('swal-level'));
-                    console.log("swal-classroom:", document.getElementById('swal-classroom'));
-                    console.log("swal-studentNumber:", document.getElementById('swal-studentNumber'));
-                    console.log("swal-studentId:", document.getElementById('swal-studentId'));
-                    console.log("swal-fullName:", document.getElementById('swal-fullName'));
-                    console.log("swal-nickname:", document.getElementById('swal-nickname'));
-                    console.log("swal-attendanceDate:", document.getElementById('swal-attendanceDate'));
-                    console.log("swal-attendanceType:", document.getElementById('swal-attendanceType'));
-                    console.log("swal-attendanceOccurrence:", document.getElementById('swal-attendanceOccurrence'));
-                    console.log("swal-absenceCategory:", document.getElementById('swal-absenceCategory'));
-                    console.log("swal-absenceDetailContinuous:", document.getElementById('swal-absenceDetailContinuous'));
-                    console.log("swal-absenceDetailNonContinuous:", document.getElementById('swal-absenceDetailNonContinuous'));
-                    console.log("swal-lateDetail:", document.getElementById('swal-lateDetail'));
-                    console.log("swal-followUpStatus:", document.getElementById('swal-followUpStatus'));
-                    console.log("swal-notes:", document.getElementById('swal-notes'));
+                    // การใช้ ?.value || '' เป็นเทคนิคป้องกัน Error โดยตรง
+                    // ?. หมายถึง "ถ้า element ไม่ใช่ null ให้ทำขั้นต่อไป (.value)"
+                    // || '' หมายถึง "ถ้าผลลัพธ์เป็น null หรือ undefined ให้ใช้ค่าเป็นสตริงว่าง '' แทน"
+                    const attendanceType = document.getElementById('swal-attendanceType')?.value || '';
+                    const absenceCategory = document.getElementById('swal-absenceCategory')?.value || '';
                 
-                    console.log("===== END DEBUGGING =====");
+                    // ---- ขั้นตอนที่ 2: รวบรวมข้อมูลทั้งหมด โดยใช้ตัวแปรที่ปลอดภัยแล้ว ----
                 
-                    // โค้ดเดิมจะทำงานต่อ (และจะยัง Error เหมือนเดิม)
-                    // แต่ log ข้างบนจะบอกเราว่าตัวไหนคือ null
                     const selectedFollowUps = Array.from(document.querySelectorAll('input[name="swalFollowUp"]:checked')).map(cb => cb.value);
-                    return {
-                        level: document.getElementById('swal-level').value, 
-                        classroom: document.getElementById('swal-classroom').value, 
-                        studentNumber: document.getElementById('swal-studentNumber').value,
-                        studentId: document.getElementById('swal-studentId').value, 
-                        fullName: document.getElementById('swal-fullName').value, 
-                        nickname: document.getElementById('swal-nickname').value,
-                        attendanceDate: document.getElementById('swal-attendanceDate').value, 
-                        attendanceType: document.getElementById('swal-attendanceType').value,
-                        attendanceOccurrence: document.getElementById('swal-attendanceOccurrence').value,
-                        absenceCategory: document.getElementById('swal-attendanceType').value === 'การขาดเรียน' ? document.getElementById('swal-absenceCategory').value : "",
-                        absenceDetailContinuous: (document.getElementById('swal-attendanceType').value === 'การขาดเรียน' && document.getElementById('swal-absenceCategory').value === 'ขาดเรียนต่อเนื่อง(รอบ1เดือน)') ? document.getElementById('swal-absenceDetailContinuous').value : "",
-                        absenceDetailNonContinuous: (document.getElementById('swal-attendanceType').value === 'การขาดเรียน' && document.getElementById('swal-absenceCategory').value === 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)') ? document.getElementById('swal-absenceDetailNonContinuous').value : "",
-                        lateDetail: document.getElementById('swal-attendanceType').value === 'การมาสาย' ? document.getElementById('swal-lateDetail').value : "",
-                        followUpActions: JSON.stringify(selectedFollowUps), 
-                        followUpStatus: document.getElementById('swal-followUpStatus').value,
-                        notes: document.getElementById('swal-notes').value
+                
+                    // สร้าง object ที่จะ return ทีละขั้น ทำให้ตรวจสอบง่าย
+                    const formData = {
+                        level: document.getElementById('swal-level')?.value || '',
+                        classroom: document.getElementById('swal-classroom')?.value || '',
+                        studentNumber: document.getElementById('swal-studentNumber')?.value || '',
+                        studentId: document.getElementById('swal-studentId')?.value || '',
+                        fullName: document.getElementById('swal-fullName')?.value || '',
+                        nickname: document.getElementById('swal-nickname')?.value || '',
+                        attendanceDate: document.getElementById('swal-attendanceDate')?.value || '',
+                        attendanceType: attendanceType, // ใช้ตัวแปรที่ปลอดภัย
+                        attendanceOccurrence: document.getElementById('swal-attendanceOccurrence')?.value || '',
+                        followUpActions: JSON.stringify(selectedFollowUps),
+                        followUpStatus: document.getElementById('swal-followUpStatus')?.value || '',
+                        notes: document.getElementById('swal-notes')?.value || '',
+                
+                        // กำหนดค่าเริ่มต้นให้เป็นค่าว่างก่อน
+                        absenceCategory: '',
+                        absenceDetailContinuous: '',
+                        absenceDetailNonContinuous: '',
+                        lateDetail: '',
+                    };
+                
+                    // ---- ขั้นตอนที่ 3: ตรวจสอบเงื่อนไข แล้วค่อยเติมข้อมูลส่วนที่เหลือ ----
+                
+                    if (attendanceType === 'การขาดเรียน') {
+                        formData.absenceCategory = absenceCategory; // ใช้ตัวแปรที่ปลอดภัย
+                        if (absenceCategory === 'ขาดเรียนต่อเนื่อง(รอบ1เดือน)') {
+                            formData.absenceDetailContinuous = document.getElementById('swal-absenceDetailContinuous')?.value || '';
+                        } else if (absenceCategory === 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)') {
+                            formData.absenceDetailNonContinuous = document.getElementById('swal-absenceDetailNonContinuous')?.value || '';
+                        }
+                    } else if (attendanceType === 'การมาสาย') {
+                        formData.lateDetail = document.getElementById('swal-lateDetail')?.value || '';
                     }
+                
+                    return formData;
                 }
             });
 
