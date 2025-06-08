@@ -904,8 +904,7 @@
                         notes: document.getElementById('swal-notes').value // <<<<----- แก้ไขจาก swล-notes เป็น swal-notes แล้ว
                     }
                 }
-            }); 
-                 
+            });
 
             if (formValues) {
                 Swal.fire({ title: 'กำลังอัปเดต...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -1196,12 +1195,8 @@
                 </div>`;
 
             const { value: formValues } = await Swal.fire({
-                title: 'แก้ไขข้อมูล',
-                html: modalHtml,
-                width: '90%',
-                showCancelButton: true, // ใช้ตัวนี้
-                confirmButtonText: '<i class="fas fa-save"></i> บันทึกการแก้ไข', // ใช้ตัวนี้
-                cancelButtonText: 'ยกเลิก', // ใช้ตัวนี้
+                title: 'แก้ไขข้อมูล', html: modalHtml, width: '90%', showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-save"></i> บันทึกการแก้ไข', cancelButtonText: 'ยกเลิก',
                 didOpen: () => {
                     const swalAttendanceTypeEl = document.getElementById('swal-attendanceType');
                     swalAttendanceTypeEl.value = rowData.AttendanceType;
@@ -1259,10 +1254,10 @@
                         lateDetail: document.getElementById('swal-attendanceType').value === 'การมาสาย' ? document.getElementById('swal-lateDetail').value : "",
                         followUpActions: JSON.stringify(selectedFollowUps),
                         followUpStatus: document.getElementById('swal-followUpStatus').value,
-                        notes: document.getElementById('swl-notes').value
+                        notes: document.getElementById('swال-notes').value
                     }
                 }
-            }); // <--- ปิดวงเล็บของ Swal.fire ที่นี่ที่เดียว
+            });
 
             if (formValues) {
                 Swal.fire({ title: 'กำลังอัปเดต...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
