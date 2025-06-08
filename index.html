@@ -752,6 +752,14 @@
         async function handleFormSubmit(e) { // This function might not be called if submit button is removed
             e.preventDefault();
             Swal.fire({ title: 'กำลังบันทึกข้อมูล...', text: 'กรุณารอสักครู่', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+            const fileToBase64 = file => new Promise((resolve, reject) => {
+                if (!file) { resolve(null); return; }
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve({ base64: reader.result.split(',')[1], type: file.type, name: file.name });
+                reader.onerror = error => reject(error);
+            });
+            
             const form = e.target;
             const profilePicFile = form.profilePicFile.files[0];
             const documentFile = form.docFile.files[0];
