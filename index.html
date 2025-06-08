@@ -1266,6 +1266,7 @@
                     });
                 },
                 preConfirm: () => {
+                    console.log('✅ RUNNING BULLETPROOF VERSION 2'); // <--- เพิ่มบรรทัดนี้เข้าไป
                     const selectedFollowUps = Array.from(document.querySelectorAll('input[name="swalFollowUp"]:checked')).map(cb => cb.value);
                     return {
                         level: document.getElementById('swal-level').value,
