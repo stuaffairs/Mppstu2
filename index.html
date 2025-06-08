@@ -884,76 +884,13 @@
                     });
                 },
                 preConfirm: () => {
-                    // ---- ขั้นตอนที่ 1: อ่านค่าจากฟิลด์หลักๆ มาเก็บในตัวแปรอย่างปลอดภัย ----
+                console.log('================================================');
+                console.log('✅✅✅ TEST CODE IS RUNNING! ✅✅✅');
+                console.log('================================================');
                 
-                    // การใช้ ?.value || '' เป็นเทคนิคป้องกัน Error โดยตรง
-                    // ?. หมายถึง "ถ้า element ไม่ใช่ null ให้ทำขั้นต่อไป (.value)"
-                    // || '' หมายถึง "ถ้าผลลัพธ์เป็น null หรือ undefined ให้ใช้ค่าเป็นสตริงว่าง '' แทน"
-                    const attendanceType = document.getElementById('swal-attendanceType')?.value || '';
-                    const absenceCategory = document.getElementById('swal-absenceCategory')?.value || '';
-                
-                    // ---- ขั้นตอนที่ 2: รวบรวมข้อมูลทั้งหมด โดยใช้ตัวแปรที่ปลอดภัยแล้ว ----
-                
-                    const selectedFollowUps = Array.from(document.querySelectorAll('input[name="swalFollowUp"]:checked')).map(cb => cb.value);
-                
-                    // สร้าง object ที่จะ return ทีละขั้น ทำให้ตรวจสอบง่าย
-                    const formData = {
-                        level: document.getElementById('swal-level')?.value || '',
-                        classroom: document.getElementById('swal-classroom')?.value || '',
-                        studentNumber: document.getElementById('swal-studentNumber')?.value || '',
-                        studentId: document.getElementById('swal-studentId')?.value || '',
-                        fullName: document.getElementById('swal-fullName')?.value || '',
-                        nickname: document.getElementById('swal-nickname')?.value || '',
-                        attendanceDate: document.getElementById('swal-attendanceDate')?.value || '',
-                        attendanceType: attendanceType, // ใช้ตัวแปรที่ปลอดภัย
-                        attendanceOccurrence: document.getElementById('swal-attendanceOccurrence')?.value || '',
-                        followUpActions: JSON.stringify(selectedFollowUps),
-                        followUpStatus: document.getElementById('swal-followUpStatus')?.value || '',
-                        notes: document.getElementById('swal-notes')?.value || '',
-                
-                        // กำหนดค่าเริ่มต้นให้เป็นค่าว่างก่อน
-                        absenceCategory: '',
-                        absenceDetailContinuous: '',
-                        absenceDetailNonContinuous: '',
-                        lateDetail: '',
-                    };
-                
-                    // ---- ขั้นตอนที่ 3: ตรวจสอบเงื่อนไข แล้วค่อยเติมข้อมูลส่วนที่เหลือ ----
-                
-                    if (attendanceType === 'การขาดเรียน') {
-                        formData.absenceCategory = absenceCategory; // ใช้ตัวแปรที่ปลอดภัย
-                        if (absenceCategory === 'ขาดเรียนต่อเนื่อง(รอบ1เดือน)') {
-                            formData.absenceDetailContinuous = document.getElementById('swal-absenceDetailContinuous')?.value || '';
-                        } else if (absenceCategory === 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)') {
-                            formData.absenceDetailNonContinuous = document.getElementById('swal-absenceDetailNonContinuous')?.value || '';
-                        }
-                    } else if (attendanceType === 'การมาสาย') {
-                        formData.lateDetail = document.getElementById('swal-lateDetail')?.value || '';
-                    }
-                
-                    return formData;
-                }
-            });
-
-            if (formValues) {
-                Swal.fire({ title: 'กำลังอัปเดต...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
-                const params = new URLSearchParams({ action: 'updateRecord', rowId, ...formValues });
-                try {
-                    const res = await fetch(SCRIPT_URL, { method: 'POST', body: params });
-                    const result = await res.json();
-                    if (result.status === 'success') {
-                        Swal.fire('สำเร็จ!', result.message, 'success');
-                        allData = []; 
-                        fetchAllData().then(() => {
-                            const activePageId = document.querySelector('.page.active')?.id;
-                            if (activePageId === 'page-individual') renderIndividualTable(); 
-                            else if (activePageId === 'page-summary') applySummaryFilters();
-                            if (activePageId === 'page-stats') handleStatsFilterChange();
-                        });
-                    } else { throw new Error(result.message); }
-                } catch (error) { Swal.fire('ผิดพลาด!', "เกิดข้อผิดพลาด: " + error.message, 'error'); }
+                // เราจะหยุดการทำงานทุกอย่างไว้แค่นี้ก่อน โดยไม่ให้ Swal ปิดไป
+                return false; 
             }
-        }
 
         function fileToBase64(file) {
             return new Promise((resolve, reject) => {
