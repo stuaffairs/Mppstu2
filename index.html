@@ -883,7 +883,7 @@
                         swalFollowUpContainer.innerHTML += `<div class="checkbox-item"><input type="checkbox" id="${id}" name="swalFollowUp" value="${opt}" ${checked}><label for="${id}">${opt}</label></div>`;
                     });
                 },
-                preConfirm: () => {
+                preConfirm: () => ({
                     const selectedFollowUps = Array.from(document.querySelectorAll('input[name="swalFollowUp"]:checked')).map(cb => cb.value);
                     return {
                         level: document.getElementById('swal-level').value, 
@@ -902,9 +902,10 @@
                         followUpActions: JSON.stringify(selectedFollowUps), 
                         followUpStatus: document.getElementById('swal-followUpStatus').value,
                         notes: document.getElementById('swal-notes').value // <<<<----- แก้ไขจาก swล-notes เป็น swal-notes แล้ว
-                    }
-                }
+                       }),
+                showCancelButton: true, confirmButtonText: '<i class="fas fa-save"></i> บันทึก', cancelButtonText: 'ยกเลิก',
             });
+    
 
             if (formValues) {
                 Swal.fire({ title: 'กำลังอัปเดต...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
@@ -915,6 +916,7 @@
                     if (result.status === 'success') {
                         Swal.fire('สำเร็จ!', result.message, 'success');
                         allData = []; 
+                        fetchDataAndView();
                         fetchAllData().then(() => {
                             const activePageId = document.querySelector('.page.active')?.id;
                             if (activePageId === 'page-individual') renderIndividualTable(); 
