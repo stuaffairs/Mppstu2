@@ -884,6 +884,29 @@
                     });
                 },
                 preConfirm: () => {
+                    console.log("===== DEBUGGING PRECONFIRM =====");
+                
+                    // เราจะ log element ทุกตัวก่อนที่จะพยายามอ่านค่า .value
+                    console.log("swal-level:", document.getElementById('swal-level'));
+                    console.log("swal-classroom:", document.getElementById('swal-classroom'));
+                    console.log("swal-studentNumber:", document.getElementById('swal-studentNumber'));
+                    console.log("swal-studentId:", document.getElementById('swal-studentId'));
+                    console.log("swal-fullName:", document.getElementById('swal-fullName'));
+                    console.log("swal-nickname:", document.getElementById('swal-nickname'));
+                    console.log("swal-attendanceDate:", document.getElementById('swal-attendanceDate'));
+                    console.log("swal-attendanceType:", document.getElementById('swal-attendanceType'));
+                    console.log("swal-attendanceOccurrence:", document.getElementById('swal-attendanceOccurrence'));
+                    console.log("swal-absenceCategory:", document.getElementById('swal-absenceCategory'));
+                    console.log("swal-absenceDetailContinuous:", document.getElementById('swal-absenceDetailContinuous'));
+                    console.log("swal-absenceDetailNonContinuous:", document.getElementById('swal-absenceDetailNonContinuous'));
+                    console.log("swal-lateDetail:", document.getElementById('swal-lateDetail'));
+                    console.log("swal-followUpStatus:", document.getElementById('swal-followUpStatus'));
+                    console.log("swal-notes:", document.getElementById('swal-notes'));
+                
+                    console.log("===== END DEBUGGING =====");
+                
+                    // โค้ดเดิมจะทำงานต่อ (และจะยัง Error เหมือนเดิม)
+                    // แต่ log ข้างบนจะบอกเราว่าตัวไหนคือ null
                     const selectedFollowUps = Array.from(document.querySelectorAll('input[name="swalFollowUp"]:checked')).map(cb => cb.value);
                     return {
                         level: document.getElementById('swal-level').value, 
@@ -901,7 +924,7 @@
                         lateDetail: document.getElementById('swal-attendanceType').value === 'การมาสาย' ? document.getElementById('swal-lateDetail').value : "",
                         followUpActions: JSON.stringify(selectedFollowUps), 
                         followUpStatus: document.getElementById('swal-followUpStatus').value,
-                        notes: document.getElementById('swal-notes').value // 
+                        notes: document.getElementById('swal-notes').value
                     }
                 }
             });
