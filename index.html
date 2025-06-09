@@ -866,6 +866,10 @@
 
             if (formValues) {
                 Swal.fire({ title: 'กำลังอัปเดต...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+                
+                console.log("--- SENDING UPDATE FROM BROWSER v3 ---"); // <--- เพิ่มบรรทัดนี้
+                console.log("Payload being sent:", formValues);      // <--- เพิ่มบรรทัดนี้
+
                 const params = new URLSearchParams({ action: 'update', rowId, ...formValues });
                 try {
                     const res = await fetch(SCRIPT_URL, { method: 'POST', body: params });
