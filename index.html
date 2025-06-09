@@ -533,7 +533,7 @@
 
     <script>
         // --- Global Variables & Constants ---
-        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyXJXTCq3eQ4O2D-QOKvMp8pP_s5dT2UxaHTO_za3panBiEAQmVbVu3GfCMDvr1KSh2vA/exec";
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwaB8C1xxPHvxz0AT7NFkn1cIsI54AryfCaKxCIkmVGs0s2MnRvID7DCzNCUuJcKf7LSg/exec";
         let allData = [];
         let charts = {};
         const followUpOptions = [
@@ -797,6 +797,7 @@
                     <div class="form-group"><label>หมายเหตุ</label><textarea id="swal-notes" class="form-control" rows="3">${rowData.Notes || ''}</textarea></div>
                 </div>`;
             
+            // 3. ใช้ SweetAlert2 เพื่อแสดงหน้าต่าง Modal
             const { value: formValues } = await Swal.fire({
                 title: 'แก้ไขข้อมูล', html: modalHtml, width: '90%', showCancelButton: true,
                 confirmButtonText: '<i class="fas fa-save"></i> บันทึกการแก้ไข', cancelButtonText: 'ยกเลิก',
@@ -863,17 +864,18 @@
                     }
                 }
             });
-
+            // 5. ถ้าผู้ใช้กดยืนยันและมีข้อมูลที่รวบรวมมา
             if (formValues) {
                 Swal.fire({ title: 'กำลังอัปเดต...', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
                 
                 console.log("--- SENDING UPDATE FROM BROWSER v3 ---"); // <--- เพิ่มบรรทัดนี้
                 console.log("Payload being sent:", formValues);      // <--- เพิ่มบรรทัดนี้
-
+            // 6. ส่งข้อมูลไปยัง Google Apps Script ด้วย Fetch API
                 const params = new URLSearchParams({ action: 'update', rowId, ...formValues });
                 try {
                     const res = await fetch(SCRIPT_URL, { method: 'POST', body: params });
                     const result = await res.json();
+                    // 7. แสดงผลลัพธ์ที่ได้รับกลับมาจากเซิร์ฟเวอร์
                     if (result.status === 'success') {
                         Swal.fire('สำเร็จ!', result.message, 'success');
                         allData = []; 
