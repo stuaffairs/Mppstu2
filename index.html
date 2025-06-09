@@ -798,9 +798,14 @@
                 </div>`;
             
             // 3. ใช้ SweetAlert2 เพื่อแสดงหน้าต่าง Modal
-            const { value: formValues } = await Swal.fire({
-                title: 'แก้ไขข้อมูล', html: modalHtml, width: '90%', showCancelButton: true,
-                confirmButtonText: '<i class="fas fa-save"></i> บันทึกการแก้ไข', cancelButtonText: 'ยกเลิก',
+                const { value: formValues } = await Swal.fire({
+                title: 'แก้ไขข้อมูล', 
+                html: modalHtml, 
+                width: '90%', 
+                focusConfirm: false,
+                showCancelButton: true,
+                confirmButtonText: '<i class="fas fa-save"></i> บันทึกการแก้ไข', 
+                cancelButtonText: 'ยกเลิก',
                 didOpen: () => {
                     const swalAttendanceTypeEl = document.getElementById('swal-attendanceType');
                     swalAttendanceTypeEl.value = rowData.AttendanceType; 
