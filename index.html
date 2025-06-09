@@ -648,34 +648,35 @@
         }
 
          async function fetchAllData() {
-    Swal.fire({ title: 'กำลังโหลดข้อมูล...', imageUrl: 'https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/0.16.1/images/loader-large.gif', imageWidth:100, imageHeight:100, showConfirmButton: false, allowOutsideClick: false });
-    try {
-        const response = await fetch(`${SCRIPT_URL}?action=read`);
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error("Fetch HTTP Error Details:", errorText);
-            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-        }
-        const jsonData = await response.json();
+            Swal.fire({ title: 'กำลังโหลดข้อมูล...', imageUrl: 'https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/0.16.1/images/loader-large.gif', imageWidth:100, imageHeight:100, showConfirmButton: false, allowOutsideClick: false });
+            try {
+                const response = await fetch(`${SCRIPT_URL}?action=read`);
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error("Fetch HTTP Error Details:", errorText);
+                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
+                }
+                const jsonData = await response.json();
+                
+                if (!Array.isArray(jsonData)) {
+                    console.error("Fetched data is not an array:", jsonData);
+                    allData = []; 
+                    throw new Error("รูปแบบข้อมูลที่ได้รับไม่ถูกต้องจากเซิร์ฟเวอร์");
+                }
         
-        if (!Array.isArray(jsonData)) {
-            console.error("Fetched data is not an array:", jsonData);
-            allData = []; 
-            throw new Error("รูปแบบข้อมูลที่ได้รับไม่ถูกต้องจากเซิร์ฟเวอร์");
+                // ข้อมูลที่ได้รับจาก Server พร้อมใช้งานทันที ไม่ต้องแปลงค่า JSON ซ้ำ
+                allData = jsonData; 
+        
+                allData.sort((a,b) => new Date(b.AttendanceDate) - new Date(a.AttendanceDate));
+                console.log("DEBUG fetchAllData - Processed allData count:", allData.length);
+                
+                Swal.close();
+            } catch(error) {
+                console.error("Fetch Error in fetchAllData (outer try-catch):", error);
+                Swal.fire('ผิดพลาด!', 'ไม่สามารถดึงข้อมูลได้: ' + error.message, 'error');
+                allData = [];
+            }
         }
-
-        // ไม่จำเป็นต้อง map และ parse ซ้ำแล้ว ข้อมูลพร้อมใช้งานทันที
-        allData = jsonData; 
-
-        allData.sort((a,b) => new Date(b.AttendanceDate) - new Date(a.AttendanceDate));
-        console.log("DEBUG fetchAllData - Processed allData count:", allData.length);
-        Swal.close();
-    } catch(error) {
-        console.error("Fetch Error in fetchAllData (outer try-catch):", error);
-        Swal.fire('ผิดพลาด!', 'ไม่สามารถดึงข้อมูลได้: ' + error.message, 'error');
-        allData = [];
-    }
-}
 
         // --- Page 1: Form Logic ---
         function handleAttendanceTypeChange(e) {
