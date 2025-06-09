@@ -841,23 +841,25 @@
                 },
                 preConfirm: () => {
                     const selectedFollowUps = Array.from(document.querySelectorAll('input[name="swalFollowUp"]:checked')).map(cb => cb.value);
+                    
+                    // ส่ง Key ให้ตรงกับ Header ใน Google Sheet ทุกประการ
                     return {
-                        level: document.getElementById('swal-level').value, 
-                        classroom: document.getElementById('swal-classroom').value, 
-                        studentNumber: document.getElementById('swal-studentNumber').value,
-                        studentId: document.getElementById('swal-studentId').value, 
-                        fullName: document.getElementById('swal-fullName').value, 
-                        nickname: document.getElementById('swal-nickname').value,
-                        attendanceDate: document.getElementById('swal-attendanceDate').value, 
-                        attendanceType: document.getElementById('swal-attendanceType').value,
-                        attendanceOccurrence: document.getElementById('swal-attendanceOccurrence').value,
-                        absenceCategory: document.getElementById('swal-attendanceType').value === 'การขาดเรียน' ? document.getElementById('swal-absenceCategory').value : "",
-                        absenceDetailContinuous: (document.getElementById('swal-attendanceType').value === 'การขาดเรียน' && document.getElementById('swal-absenceCategory').value === 'ขาดเรียนต่อเนื่อง(รอบ1เดือน)') ? document.getElementById('swal-absenceDetailContinuous').value : "",
-                        absenceDetailNonContinuous: (document.getElementById('swal-attendanceType').value === 'การขาดเรียน' && document.getElementById('swal-absenceCategory').value === 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)') ? document.getElementById('swal-absenceDetailNonContinuous').value : "",
-                        lateDetail: document.getElementById('swal-attendanceType').value === 'การมาสาย' ? document.getElementById('swal-lateDetail').value : "",
-                        followUpActions: JSON.stringify(selectedFollowUps), 
-                        followUpStatus: document.getElementById('swal-followUpStatus').value,
-                        notes: document.getElementById('swal-notes').value // <<<<----- แก้ไขจาก swล-notes เป็น swal-notes แล้ว
+                        'Level': document.getElementById('swal-level').value,
+                        'Classroom': document.getElementById('swal-classroom').value,
+                        'StudentNumber': document.getElementById('swal-studentNumber').value,
+                        'StudentID': document.getElementById('swal-studentId').value,
+                        'FullName': document.getElementById('swal-fullName').value,
+                        'Nickname': document.getElementById('swal-nickname').value,
+                        'AttendanceDate': document.getElementById('swal-attendanceDate').value,
+                        'AttendanceType': document.getElementById('swal-attendanceType').value,
+                        'AttendanceOccurrence': document.getElementById('swal-attendanceOccurrence').value,
+                        'AbsenceCategory': document.getElementById('swal-attendanceType').value === 'การขาดเรียน' ? document.getElementById('swal-absenceCategory').value : "",
+                        'AbsenceDetailContinuous': (document.getElementById('swal-attendanceType').value === 'การขาดเรียน' && document.getElementById('swal-absenceCategory').value === 'ขาดเรียนต่อเนื่อง(รอบ1เดือน)') ? document.getElementById('swal-absenceDetailContinuous').value : "",
+                        'AbsenceDetailNonContinuous': (document.getElementById('swal-attendanceType').value === 'การขาดเรียน' && document.getElementById('swal-absenceCategory').value === 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)') ? document.getElementById('swal-absenceDetailNonContinuous').value : "",
+                        'LateDetail': document.getElementById('swal-attendanceType').value === 'การมาสาย' ? document.getElementById('swal-lateDetail').value : "",
+                        'FollowUpActions': JSON.stringify(selectedFollowUps),
+                        'FollowUpStatus': document.getElementById('swal-followUpStatus').value,
+                        'Notes': document.getElementById('swal-notes').value
                     }
                 }
             });
