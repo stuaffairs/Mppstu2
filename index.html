@@ -648,79 +648,34 @@
         }
 
          async function fetchAllData() {
-            Swal.fire({ title: 'กำลังโหลดข้อมูล...', imageUrl: 'https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/0.16.1/images/loader-large.gif', imageWidth:100, imageHeight:100, showConfirmButton: false, allowOutsideClick: false });
-            try {
-                const response = await fetch(`${SCRIPT_URL}?action=read`);
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error("Fetch HTTP Error Details:", errorText);
-                    throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-                }
-                const jsonData = await response.json();
-                
-                if (!Array.isArray(jsonData)) {
-                    console.error("Fetched data is not an array:", jsonData);
-                    allData = []; 
-                    throw new Error("รูปแบบข้อมูลที่ได้รับไม่ถูกต้องจากเซิร์ฟเวอร์");
-                }
-
-                allData = jsonData.map(row => {
-                    // Helper function to parse JSON fields, now with logging for ProfilePicJSON
-                    const parseJsonField = (fieldValue, defaultVal = null, fieldName = "UnknownField") => {
-                        // ***** START: DEBUG Log for ProfilePicJSON parsing *****
-                        if (fieldName === "ProfilePicJSON") {
-                            console.log(`DEBUG fetchAllData - RowID: ${row.RowID}, Raw ${fieldName} from sheet:`, fieldValue, "(Type:", typeof fieldValue + ")");
-                        }
-                        // ***** END: DEBUG Log for ProfilePicJSON parsing *****
-
-                        if (fieldValue && typeof fieldValue === 'string') {
-                            try { 
-                                const parsed = JSON.parse(fieldValue);
-                                // ***** START: DEBUG Log successful parsing for ProfilePicJSON *****
-                                if (fieldName === "ProfilePicJSON") {
-                                    console.log(`DEBUG fetchAllData - RowID: ${row.RowID}, Successfully parsed ${fieldName}:`, parsed);
-                                }
-                                // ***** END: DEBUG Log successful parsing for ProfilePicJSON *****
-                                return parsed; 
-                            } 
-                            catch (e) { 
-                                console.warn(`DEBUG fetchAllData - Could not parse JSON for ${fieldName}, RowID: ${row.RowID}, Value:`, fieldValue, "Error:", e); 
-                                return defaultVal; 
-                            }
-                        }
-                        // ***** START: DEBUG Log if not string or empty for ProfilePicJSON *****
-                        if (fieldName === "ProfilePicJSON" && (!fieldValue || typeof fieldValue !== 'string')) {
-                             console.log(`DEBUG fetchAllData - RowID: ${row.RowID}, ${fieldName} is NOT a string or IS empty/null. Value:`, fieldValue);
-                        }
-                        // ***** END: DEBUG Log if not string or empty for ProfilePicJSON *****
-                        return fieldValue || defaultVal; // If already an object (from previous parse) or null/undefined
-                    };
-
-                    row.FollowUpActions = parseJsonField(row.FollowUpActions, [], "FollowUpActions");
-                    row.DocumentJSON = parseJsonField(row.DocumentJSON, null, "DocumentJSON");
-                    row.ImageJSON = parseJsonField(row.ImageJSON, null, "ImageJSON");
-                    row.ProfilePicJSON = parseJsonField(row.ProfilePicJSON, null, "ProfilePicJSON"); // Pass fieldName for specific logging
-                    return row;
-                });
-
-                allData.sort((a,b) => new Date(b.AttendanceDate) - new Date(a.AttendanceDate));
-                console.log("DEBUG fetchAllData - Processed allData count:", allData.length);
-                if (allData.length > 0) {
-                    // Log a sample of the processed ProfilePicJSON for the first record that has one
-                    const sampleWithPic = allData.find(r => r.ProfilePicJSON && r.ProfilePicJSON.url);
-                    if (sampleWithPic) {
-                        console.log("DEBUG fetchAllData - Sample processed ProfilePicJSON:", sampleWithPic.ProfilePicJSON);
-                    } else {
-                        console.log("DEBUG fetchAllData - No processed ProfilePicJSON found in sample.");
-                    }
-                }
-                Swal.close();
-            } catch(error) {
-                console.error("Fetch Error in fetchAllData (outer try-catch):", error);
-                Swal.fire('ผิดพลาด!', 'ไม่สามารถดึงข้อมูลได้: ' + error.message, 'error');
-                allData = [];
-            }
+    Swal.fire({ title: 'กำลังโหลดข้อมูล...', imageUrl: 'https://cdnjs.cloudflare.com/ajax/libs/semantic-ui/0.16.1/images/loader-large.gif', imageWidth:100, imageHeight:100, showConfirmButton: false, allowOutsideClick: false });
+    try {
+        const response = await fetch(`${SCRIPT_URL}?action=read`);
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error("Fetch HTTP Error Details:", errorText);
+            throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
         }
+        const jsonData = await response.json();
+        
+        if (!Array.isArray(jsonData)) {
+            console.error("Fetched data is not an array:", jsonData);
+            allData = []; 
+            throw new Error("รูปแบบข้อมูลที่ได้รับไม่ถูกต้องจากเซิร์ฟเวอร์");
+        }
+
+        // ไม่จำเป็นต้อง map และ parse ซ้ำแล้ว ข้อมูลพร้อมใช้งานทันที
+        allData = jsonData; 
+
+        allData.sort((a,b) => new Date(b.AttendanceDate) - new Date(a.AttendanceDate));
+        console.log("DEBUG fetchAllData - Processed allData count:", allData.length);
+        Swal.close();
+    } catch(error) {
+        console.error("Fetch Error in fetchAllData (outer try-catch):", error);
+        Swal.fire('ผิดพลาด!', 'ไม่สามารถดึงข้อมูลได้: ' + error.message, 'error');
+        allData = [];
+    }
+}
 
         // --- Page 1: Form Logic ---
         function handleAttendanceTypeChange(e) {
