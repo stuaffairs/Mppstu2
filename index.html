@@ -721,20 +721,20 @@
 
             const params = new URLSearchParams({
                 action: 'create',
-                level: form.level.value, classroom: form.classroom.value, studentNumber: form.studentNumber.value,
-                studentId: form.studentId.value, fullName: form.fullName.value, nickname: form.nickname.value,
-                profilePicData: profilePicData ? JSON.stringify(profilePicData) : null, // ส่งรูปโปรไฟล์
-                attendanceDate: form.attendanceDate.value, attendanceType: form.attendanceType.value,
-                attendanceOccurrence: form.attendanceOccurrence.value,
-                absenceCategory: form.attendanceType.value === 'การขาดเรียน' ? form.absenceCategory.value : "",
-                absenceDetailContinuous: (form.attendanceType.value === 'การขาดเรียน' && form.absenceCategory.value === 'ขาดเรียนต่อเนื่อง(รอบ1เดือน)') ? form.absenceDetailContinuous.value : "",
-                absenceDetailNonContinuous: (form.attendanceType.value === 'การขาดเรียน' && form.absenceCategory.value === 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)') ? form.absenceDetailNonContinuous.value : "",
-                lateDetail: form.attendanceType.value === 'การมาสาย' ? form.lateDetail.value : "",
-                followUpActions: JSON.stringify(selectedFollowUps),
-                followUpStatus: form.followUpStatus.value,
-                notes: form.notes.value,
-                documentData: documentData ? JSON.stringify(documentData) : null, // ส่งเอกสาร
-                imageData: imageData ? JSON.stringify(imageData) : null          // ส่งรูปภาพประกอบ
+                Level: form.level.value, Classroom: form.classroom.value, StudentNumber: form.studentNumber.value,
+                StudentId: form.studentId.value, FullName: form.fullName.value, Nickname: form.nickname.value,
+                ProfilePicData: profilePicData ? JSON.stringify(profilePicData) : null, // ส่งรูปโปรไฟล์
+                AttendanceDate: form.AttendanceDate.value, AttendanceType: form.attendanceType.value,
+                AttendanceOccurrence: form.attendanceOccurrence.value,
+                AbsenceCategory: form.attendanceType.value === 'การขาดเรียน' ? form.absenceCategory.value : "",
+                AbsenceDetailContinuous: (form.attendanceType.value === 'การขาดเรียน' && form.absenceCategory.value === 'ขาดเรียนต่อเนื่อง(รอบ1เดือน)') ? form.absenceDetailContinuous.value : "",
+                AbsenceDetailNonContinuous: (form.attendanceType.value === 'การขาดเรียน' && form.absenceCategory.value === 'ขาดเรียนไม่ต่อเนื่อง(รอบ1เดือน)') ? form.absenceDetailNonContinuous.value : "",
+                LateDetail: form.attendanceType.value === 'การมาสาย' ? form.lateDetail.value : "",
+                FollowUpActions: JSON.stringify(selectedFollowUps),
+                FollowUpStatus: form.followUpStatus.value,
+                Notes: form.notes.value,
+                DocumentData: documentData ? JSON.stringify(documentData) : null, // ส่งเอกสาร
+                ImageData: imageData ? JSON.stringify(imageData) : null          // ส่งรูปภาพประกอบ
             });
 
             try {
@@ -758,7 +758,7 @@
         }
 
         // --- Generic Functions (Edit, Delete) ---
-        async function editRecord(rowId) {
+        async function (rowId) {
             const rowData = allData.find(r => r.RowID == rowId);
             if (!rowData) { Swal.fire('ผิดพลาด', 'ไม่พบข้อมูล', 'error'); return; }
 
@@ -1061,7 +1061,7 @@
                         <button class="btn btn-primary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(allData.find(d=>d.RowID==${row.RowID})?.DocumentJSON, "docs")' ${!(row.DocumentJSON && row.DocumentJSON.url) ? 'disabled' : ''}><i class="fas fa-file-alt"></i></button>
                     </td>
                     <td>
-                        <button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick="editRecord(${row.RowID})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick="(${row.RowID})"><i class="fas fa-edit"></i></button>
                         <button class="btn btn-danger btn-sm" style="padding: 5px 8px;" onclick="deleteRecord(${row.RowID})"><i class="fas fa-trash"></i></button>
                     </td>`;
                 tbody.appendChild(tr);
