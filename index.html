@@ -838,6 +838,42 @@ async function editRecord(rowId) {
         } catch (error) { Swal.fire('ผิดพลาด!', "เกิดข้อผิดพลาด: " + error.message, 'error'); }
     }
 }
+       function setupSummaryPageFilters() {
+        const filterTypeEl = document.getElementById('summary-filter-type');
+        if (!filterTypeEl) return;
+
+        const currentFilter = filterTypeEl.value;
+        if (filterTypeEl.options.length <= 1) {
+            filterTypeEl.innerHTML = `
+                <option value="all">นักเรียนทั้งหมด</option>
+                <option value="classroom">ห้องเรียน</option>
+                <option value="date">วันที่บันทึก</option>
+                <option value="month">เดือน</option>
+                <option value="level">ระดับชั้น</option>
+                <option value="absence_continuous">การขาดเรียนต่อเนื่อง</option>
+                <option value="absence_noncontinuous">การขาดเรียนไม่ต่อเนื่อง</option>
+                <option value="late">การมาสาย</option>`;
+        }
+        filterTypeEl.value = currentFilter || 'all';
+
+        const container = document.getElementById('summary-filter-input-container');
+        if (!container) return;
+
+        let inputHtml = '';
+        const selectedFilterType = filterTypeEl.value;
+
+        if (selectedFilterType === 'classroom') {
+            inputHtml = `<select id="summary-filter-value" class="form-control">${Array.from({length: 18}, (_, i) => `<option value="${i+1}">ห้อง ${i+1}</option>`).join('')}</select>`;
+        } else if (selectedFilterType === 'date') {
+            inputHtml = `<input type="date" id="summary-filter-value" class="form-control">`;
+        } else if (selectedFilterType === 'month') {
+            inputHtml = `<input type="month" id="summary-filter-value" class="form-control">`;
+        } else if (selectedFilterType === 'level') {
+            inputHtml = `<select id="summary-filter-value" class="form-control">${Array.from({length: 6}, (_, i) => `<option value="ม.${i+1}">ม.${i+1}</option>`).join('')}</select>`;
+        }
+        
+        container.innerHTML = inputHtml;
+    }     
     </script>
 </body>
 </html>
