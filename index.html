@@ -979,18 +979,11 @@
             studentInfoDisplay.classList.add('hidden');
         
             if (!keyword) {
-                Swal.fire('โปรดทราบ', 'กรุณาป้อนคำค้นหาสำหรับนักเรียน', 'info');
                 tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">กรุณาป้อนคำค้นหา</td></tr>`;
                 return;
             }
         
-            if (!allData || allData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">ไม่พบข้อมูลในระบบ</td></tr>`;
-                return;
-            }
-        
             const potentialMatches = allData.filter(row => {
-                if (!row || typeof row !== 'object') return false;
                 const valueToSearch = row[searchType];
                 return (valueToSearch || "").toString().toLowerCase().includes(keyword);
             });
@@ -1008,39 +1001,29 @@
             });
         
             const uniqueStudentArray = Array.from(uniqueStudents.values());
-            let targetStudentID = null;
+            let targetStudentID = (uniqueStudentArray.length === 1) ? uniqueStudentArray[0].StudentID : null;
         
             if (uniqueStudentArray.length > 1) {
+                // ... (ส่วน pop-up ให้เลือกนักเรียน ยังคงเหมือนเดิม ไม่ต้องแก้ไข) ...
                 const inputOptions = uniqueStudentArray.map(student => {
                     const studentLabel = `${student.FullName} (รหัส: ${student.StudentID}) - ม.${student.Level}/${student.Classroom}`;
                     return `<label class="swal-radio-label"><input type="radio" name="student_choice" value="${student.StudentID}"><span>${studentLabel}</span></label>`;
                 }).join('');
-        
                 const { value: selectedId } = await Swal.fire({
                     title: 'พบนักเรียนหลายคน',
                     html: `<p>กรุณาเลือกนักเรียนที่ต้องการดูข้อมูล:</p><div class="swal-radio-group">${inputOptions}</div>`,
-                    confirmButtonText: 'ยืนยัน',
-                    showCancelButton: true,
-                    cancelButtonText: 'ยกเลิก',
+                    confirmButtonText: 'ยืนยัน', showCancelButton: true, cancelButtonText: 'ยกเลิก',
                     preConfirm: () => {
                         const selected = document.querySelector('input[name="student_choice"]:checked');
-                        if (!selected) {
-                            Swal.showValidationMessage('กรุณาเลือกนักเรียน 1 คน');
-                            return null;
-                        }
+                        if (!selected) { Swal.showValidationMessage('กรุณาเลือกนักเรียน 1 คน'); return null; }
                         return selected.value;
                     }
                 });
-        
-                if (selectedId) {
-                    targetStudentID = selectedId;
-                } else {
+                if (!selectedId) {
                     tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">ผู้ใช้ยกเลิกการเลือก</td></tr>`;
                     return;
                 }
-        
-            } else {
-                targetStudentID = uniqueStudentArray[0].StudentID;
+                targetStudentID = selectedId;
             }
             
             if (!targetStudentID) {
@@ -1051,14 +1034,8 @@
             const studentAttendanceRecords = allData.filter(row => row.StudentID === targetStudentID);
             const studentMasterInfo = studentAttendanceRecords[0];
         
-            // --- จุดที่แก้ไข ---
-            console.log("--- DEBUGGING PICTURE ---");
-            console.log("ข้อมูลนักเรียนที่พบ:", studentMasterInfo);
-            console.log("ข้อมูลใน ProfilePicURL:", studentMasterInfo.ProfilePicURL);
-        
+            // ส่วนแสดงผลรูปภาพที่แก้ไขแล้ว
             let profilePicHtml = '<div style="width:100px; height:100px; background-color:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; float:left; margin-right:15px;"><i class="fas fa-user fa-3x" style="color:#aaa;"></i></div>';
-            
-            // --- จุดที่แก้ไข ---
             if (studentMasterInfo.ProfilePicURL && studentMasterInfo.ProfilePicURL.url) {
                 profilePicHtml = `<img src="${studentMasterInfo.ProfilePicURL.url}" alt="รูปนักเรียน ${studentMasterInfo.FullName}">`;
             }
@@ -1072,31 +1049,24 @@
                 <div class="clear-float"></div>`;
             studentInfoDisplay.classList.remove('hidden');
         
+            // ส่วนแสดงรายการในตาราง (เหมือนเดิม)
             tbody.innerHTML = '';
             studentAttendanceRecords.forEach(row => {
                 let typeAndDetail = `${row.AttendanceType}`;
                 if (row.AbsenceDetailContinuous) typeAndDetail += ` (${row.AbsenceDetailContinuous})`;
                 else if (row.AbsenceDetailNonContinuous) typeAndDetail += ` (${row.AbsenceDetailNonContinuous})`;
                 else if (row.LateDetail) typeAndDetail += ` (${row.LateDetail})`;
-        
                 let followUps = Array.isArray(row.FollowUpActions) && row.FollowUpActions.length > 0 ? row.FollowUpActions.join(', ') : '-';
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${row.AttendanceDate}</td>
-                    <td>${typeAndDetail}</td>
-                    <td>${row.AttendanceOccurrence}</td>
-                    <td>${followUps}</td>
-                    <td>${row.FollowUpStatus || 'N/A'}</td>
-                    <td>${row.Notes || '-'}</td>
+                    <td>${row.AttendanceDate}</td><td>${typeAndDetail}</td><td>${row.AttendanceOccurrence}</td>
+                    <td>${followUps}</td><td>${row.FollowUpStatus || 'N/A'}</td><td>${row.Notes || '-'}</td>
                     <td><button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(allData.find(d=>d.RowID==${row.RowID})?.ImageJSON, "images")' ${!(row.ImageJSON && row.ImageJSON.url) ? 'disabled' : ''}><i class="fas fa-image"></i></button></td>
                     <td><button class="btn btn-primary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(allData.find(d=>d.RowID==${row.RowID})?.DocumentJSON, "docs")' ${!(row.DocumentJSON && row.DocumentJSON.url) ? 'disabled' : ''}><i class="fas fa-file-alt"></i></button></td>
-                    <td>
-                        <button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick="editRecord(${row.RowID})"><i class="fas fa-edit"></i></button>
-                        <button class="btn btn-danger btn-sm" style="padding: 5px 8px;" onclick="deleteRecord(${row.RowID})"><i class="fas fa-trash"></i></button>
-                    </td>`;
+                    <td><button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick="editRecord(${row.RowID})"><i class="fas fa-edit"></i></button> <button class="btn btn-danger btn-sm" style="padding: 5px 8px;" onclick="deleteRecord(${row.RowID})"><i class="fas fa-trash"></i></button></td>`;
                 tbody.appendChild(tr);
             });
-}
+        }
 
             // Get all attendance records for the uniquely identified student
             const studentAttendanceRecords = allData.filter(row => row.StudentID === targetStudentID);
