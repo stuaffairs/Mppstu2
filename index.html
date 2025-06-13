@@ -966,75 +966,135 @@
 
 
         // --- Page 2: Individual Logic ---
-        function renderIndividualTable() {
+        async function renderIndividualTable() {
             const searchType = document.getElementById('individual-search-type').value;
             const keyword = document.getElementById('individual-search-keyword').value.trim().toLowerCase();
             const studentInfoDisplay = document.getElementById('individual-student-info-display');
-            const studentInfoContent = document.getElementById('student-info-content'); // Make sure this element exists in your HTML for student info
+            const studentInfoContent = document.getElementById('student-info-content');
             const table = document.getElementById('individual-table');
-            const thead = table.querySelector('thead');
             const tbody = table.querySelector('tbody');
-
-            console.log("DEBUG Page 2: Search Attempt - Type:", searchType, "Keyword:", `"${keyword}"`, "Data available:", allData.length);
-            if(allData.length > 0 && allData[0]) { console.log("DEBUG Page 2: Sample allData[0] keys:", Object.keys(allData[0])); }
-
-
-            // Set default headers for the attendance records table
+            const thead = table.querySelector('thead');
+        
             thead.innerHTML = `<tr><th>วันที่</th><th>ประเภท & รายละเอียด</th><th>ครั้งที่</th><th>ผลการติดตาม</th><th>สถานะติดตาม</th><th>หมายเหตุ</th><th>รูปภาพ</th><th>เอกสาร</th><th>จัดการ</th></tr>`;
-
+            studentInfoDisplay.classList.add('hidden');
+        
             if (!keyword) {
                 Swal.fire('โปรดทราบ', 'กรุณาป้อนคำค้นหาสำหรับนักเรียน', 'info');
                 tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">กรุณาป้อนคำค้นหา</td></tr>`;
-                studentInfoDisplay.classList.add('hidden');
-                studentInfoContent.innerHTML = '';
                 return;
             }
-
+        
             if (!allData || allData.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">ไม่พบข้อมูลนักเรียนในระบบ หรือข้อมูลยังโหลดไม่เสร็จ</td></tr>`;
-                studentInfoDisplay.classList.add('hidden');
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">ไม่พบข้อมูลในระบบ</td></tr>`;
                 return;
             }
-
+        
             const potentialMatches = allData.filter(row => {
-                if (!row || typeof row !== 'object') { console.warn("Invalid row in allData:", row); return false; }
-                const valueToSearch = row[searchType]; // searchType will be 'FullName', 'Nickname', or 'StudentID'
+                if (!row || typeof row !== 'object') return false;
+                const valueToSearch = row[searchType];
                 return (valueToSearch || "").toString().toLowerCase().includes(keyword);
             });
-
-            console.log("DEBUG Page 2: Potential matches found:", potentialMatches.length);
-
-            tbody.innerHTML = ''; // Clear previous table rows
-            studentInfoDisplay.classList.add('hidden'); // Hide student info section initially
-            studentInfoContent.innerHTML = '';
-
-
+        
             if (potentialMatches.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">ไม่พบข้อมูลนักเรียนที่ตรงกับคำค้นหา: '${keyword}'</td></tr>`;
                 return;
             }
-
+        
+            const uniqueStudents = new Map();
+            potentialMatches.forEach(row => {
+                if (!uniqueStudents.has(row.StudentID)) {
+                    uniqueStudents.set(row.StudentID, row);
+                }
+            });
+        
+            const uniqueStudentArray = Array.from(uniqueStudents.values());
             let targetStudentID = null;
-
-            if (searchType === "FullName" || searchType === "Nickname") {
-                const uniqueStudentIDs = [...new Set(potentialMatches.map(r => r.StudentID))];
-                console.log("DEBUG Page 2: Unique StudentIDs for Name/Nickname search:", uniqueStudentIDs);
-                if (uniqueStudentIDs.length > 1) {
-                    Swal.fire('ข้อมูลซ้ำซ้อน', `พบนักเรียน ${uniqueStudentIDs.length} คนที่มี ${searchType === "FullName" ? "ชื่อ-สกุล" : "ชื่อเล่น"} ตรงกับคำค้นหา กรุณาค้นหาด้วย "รหัสประจำตัวนักเรียน" เพื่อระบุให้ชัดเจนยิ่งขึ้น`, 'warning');
-                    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">พบข้อมูลซ้ำซ้อน กรุณาค้นหาด้วยรหัสประจำตัว</td></tr>`;
+        
+            if (uniqueStudentArray.length > 1) {
+                const inputOptions = uniqueStudentArray.map(student => {
+                    const studentLabel = `${student.FullName} (รหัส: ${student.StudentID}) - ม.${student.Level}/${student.Classroom}`;
+                    return `<label class="swal-radio-label"><input type="radio" name="student_choice" value="${student.StudentID}"><span>${studentLabel}</span></label>`;
+                }).join('');
+        
+                const { value: selectedId } = await Swal.fire({
+                    title: 'พบนักเรียนหลายคน',
+                    html: `<p>กรุณาเลือกนักเรียนที่ต้องการดูข้อมูล:</p><div class="swal-radio-group">${inputOptions}</div>`,
+                    confirmButtonText: 'ยืนยัน',
+                    showCancelButton: true,
+                    cancelButtonText: 'ยกเลิก',
+                    preConfirm: () => {
+                        const selected = document.querySelector('input[name="student_choice"]:checked');
+                        if (!selected) {
+                            Swal.showValidationMessage('กรุณาเลือกนักเรียน 1 คน');
+                            return null;
+                        }
+                        return selected.value;
+                    }
+                });
+        
+                if (selectedId) {
+                    targetStudentID = selectedId;
+                } else {
+                    tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">ผู้ใช้ยกเลิกการเลือก</td></tr>`;
                     return;
                 }
-                if (uniqueStudentIDs.length === 1) {
-                    targetStudentID = uniqueStudentIDs[0];
-                }
-            } else { // Searching by StudentID
-                targetStudentID = potentialMatches[0].StudentID;
+        
+            } else {
+                targetStudentID = uniqueStudentArray[0].StudentID;
             }
-
+            
             if (!targetStudentID) {
-                 tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">ไม่สามารถระบุข้อมูลนักเรียนที่ต้องการได้ กรุณาตรวจสอบคำค้นหา</td></tr>`;
-                 return;
+                tbody.innerHTML = `<tr><td colspan="9" style="text-align: center;">ไม่สามารถระบุข้อมูลนักเรียนได้</td></tr>`;
+                return;
             }
+        
+            const studentAttendanceRecords = allData.filter(row => row.StudentID === targetStudentID);
+            const studentMasterInfo = studentAttendanceRecords[0];
+        
+            // --- จุดที่แก้ไข ---
+            console.log("DEBUG Page 2 - studentMasterInfo.ProfilePicURL:", studentMasterInfo.ProfilePicURL);
+        
+            let profilePicHtml = '<div style="width:100px; height:100px; background-color:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; float:left; margin-right:15px;"><i class="fas fa-user fa-3x" style="color:#aaa;"></i></div>';
+            
+            // --- จุดที่แก้ไข ---
+            if (studentMasterInfo.ProfilePicURL && studentMasterInfo.ProfilePicURL.url) {
+                profilePicHtml = `<img src="${studentMasterInfo.ProfilePicURL.url}" alt="รูปนักเรียน ${studentMasterInfo.FullName}">`;
+            }
+            
+            studentInfoContent.innerHTML = `
+                ${profilePicHtml}
+                <div>
+                    <strong>${studentMasterInfo.FullName} (${studentMasterInfo.Nickname || '-'})</strong> - รหัส: ${studentMasterInfo.StudentID}<br>
+                    ระดับชั้น: ${studentMasterInfo.Level} ห้อง: ${studentMasterInfo.Classroom} เลขที่: ${studentMasterInfo.StudentNumber}
+                </div>
+                <div class="clear-float"></div>`;
+            studentInfoDisplay.classList.remove('hidden');
+        
+            tbody.innerHTML = '';
+            studentAttendanceRecords.forEach(row => {
+                let typeAndDetail = `${row.AttendanceType}`;
+                if (row.AbsenceDetailContinuous) typeAndDetail += ` (${row.AbsenceDetailContinuous})`;
+                else if (row.AbsenceDetailNonContinuous) typeAndDetail += ` (${row.AbsenceDetailNonContinuous})`;
+                else if (row.LateDetail) typeAndDetail += ` (${row.LateDetail})`;
+        
+                let followUps = Array.isArray(row.FollowUpActions) && row.FollowUpActions.length > 0 ? row.FollowUpActions.join(', ') : '-';
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.AttendanceDate}</td>
+                    <td>${typeAndDetail}</td>
+                    <td>${row.AttendanceOccurrence}</td>
+                    <td>${followUps}</td>
+                    <td>${row.FollowUpStatus || 'N/A'}</td>
+                    <td>${row.Notes || '-'}</td>
+                    <td><button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(allData.find(d=>d.RowID==${row.RowID})?.ImageJSON, "images")' ${!(row.ImageJSON && row.ImageJSON.url) ? 'disabled' : ''}><i class="fas fa-image"></i></button></td>
+                    <td><button class="btn btn-primary btn-sm" style="padding: 5px 8px;" onclick='showFilesModal(allData.find(d=>d.RowID==${row.RowID})?.DocumentJSON, "docs")' ${!(row.DocumentJSON && row.DocumentJSON.url) ? 'disabled' : ''}><i class="fas fa-file-alt"></i></button></td>
+                    <td>
+                        <button class="btn btn-secondary btn-sm" style="padding: 5px 8px;" onclick="editRecord(${row.RowID})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-sm" style="padding: 5px 8px;" onclick="deleteRecord(${row.RowID})"><i class="fas fa-trash"></i></button>
+                    </td>`;
+                tbody.appendChild(tr);
+            });
+}
 
             // Get all attendance records for the uniquely identified student
             const studentAttendanceRecords = allData.filter(row => row.StudentID === targetStudentID);
