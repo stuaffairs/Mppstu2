@@ -975,6 +975,14 @@
             const thead = table.querySelector('thead');
             const tbody = table.querySelector('tbody');
 
+        // ***** เพิ่มบรรทัด console.log ตรงนี้ครับ *****
+            console.log("DEBUG Page 2 - studentMasterInfo Object:", studentMasterInfo); 
+            console.log("DEBUG Page 2 - studentMasterInfo.ProfilePicJSON:", studentMasterInfo.ProfilePicJSON);
+            if (studentMasterInfo.ProfilePicJSON) {
+                console.log("DEBUG Page 2 - studentMasterInfo.ProfilePicJSON.url:", studentMasterInfo.ProfilePicJSON.url);
+            } else {
+            console.log("DEBUG Page 2 - studentMasterInfo.ProfilePicJSON is null or undefined");
+            }
             console.log("DEBUG Page 2: Search Attempt - Type:", searchType, "Keyword:", `"${keyword}"`, "Data available:", allData.length);
             if(allData.length > 0 && allData[0]) { console.log("DEBUG Page 2: Sample allData[0] keys:", Object.keys(allData[0])); }
 
@@ -1056,18 +1064,24 @@
             }
             
             // Display Student Information (Part 1)
-            let profilePicHtml = '<div style="width:100px; height:100px; background-color:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; float:left; margin-right:15px;"><i class="fas fa-user fa-3x" style="color:#aaa;"></i></div>';
-            if (studentMasterInfo.ProfilePicJSON && studentMasterInfo.ProfilePicJSON.url) {
-                profilePicHtml = `<img src="${studentMasterInfo.ProfilePicJSON.url}" alt="รูปนักเรียน ${studentMasterInfo.FullName}">`;
-            }
-            studentInfoContent.innerHTML = `
-                ${profilePicHtml}
-                <div>
-                    <strong>${studentMasterInfo.FullName} (${studentMasterInfo.Nickname || '-'})</strong> - รหัส: ${studentMasterInfo.StudentID}<br>
-                    ระดับชั้น: ${studentMasterInfo.Level} ห้อง: ${studentMasterInfo.Classroom} เลขที่: ${studentMasterInfo.StudentNumber}
-                </div>
-                <div class="clear-float"></div>`;
-            studentInfoDisplay.classList.remove('hidden');
+             let profilePicHtml = '<div style="width:100px; height:100px; background-color:#eee; border-radius:50%; display:flex; align-items:center; justify-content:center; float:left; margin-right:15px;"><i class="fas fa-user fa-3x" style="color:#aaa;"></i></div>';
+            if (studentMasterInfo.ProfilePicJSON && studentMasterInfo.ProfilePicJSON.url) {
+                // --- จุดที่แก้ไข ---
+                // เราจะส่งข้อมูลนักเรียนทั้งหมดเข้าไปในฟังก์ชัน โดยแปลงเป็น JSON string ก่อน
+                profilePicHtml = `<img src="${studentMasterInfo.ProfilePicJSON.url}" 
+                                     alt="รูปนักเรียน ${studentMasterInfo.FullName}" 
+                                     style="cursor: pointer;" 
+                                     onclick='showProfilePicModal(${JSON.stringify(studentMasterInfo)})'>`;
+            }
+            studentInfoContent.innerHTML = `
+                ${profilePicHtml}
+                <div>
+                    <strong>${studentMasterInfo.FullName} (${studentMasterInfo.Nickname || '-'})</strong> - รหัส: ${studentMasterInfo.StudentID}<br>
+                    ระดับชั้น: ${studentMasterInfo.Level} ห้อง: ${studentMasterInfo.Classroom} เลขที่: ${studentMasterInfo.StudentNumber}
+                </div>
+                <div class="clear-float"></div>`;
+            studentInfoDisplay.classList.remove('hidden');
+            
 
             // Display Attendance Records (Part 2) in the table
             studentAttendanceRecords.forEach(row => {
@@ -1113,7 +1127,22 @@
                 content += '</div>';
                 Swal.fire({ title: `ไฟล์${type === 'images' ? 'รูปภาพ' : 'เอกสาร'}`, html: content, width: type === 'images' ? '80%' : '500px' });
                 }
-       
+       // --- เพิ่มฟังก์ชันใหม่นี้เข้าไปครับ ---
+        function showProfilePicModal(studentInfo) {
+            if (!studentInfo || !studentInfo.ProfilePicJSON || !studentInfo.ProfilePicJSON.url) {
+                Swal.fire('ไม่มีรูปภาพ', 'ไม่พบข้อมูลรูปประจำตัวสำหรับนักเรียนคนนี้', 'info');
+                return;
+            }
+
+            Swal.fire({
+                title: `รูปประจำตัว: ${studentInfo.FullName}`,
+                imageUrl: studentInfo.ProfilePicJSON.url,
+                imageWidth: 400,
+                imageAlt: `รูปของ ${studentInfo.FullName}`,
+                width: 'auto',
+                confirmButtonText: 'ปิด'
+            });
+        }
 
         // --- Page 3: Summary Logic ---
         function setupSummaryPageFilters() {
